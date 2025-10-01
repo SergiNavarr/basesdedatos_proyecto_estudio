@@ -34,80 +34,24 @@ Diseñar e implementar un sistema de base de datos que centralice la informació
 
 ### Objetivos Específicos
 
-Registrar y mantener información detallada sobre clientes, paquetes, rutas, vehículos, conductores y sucursales.
-Controlar los estados de los paquetes (Pendiente, En tránsito, Entregado, Retrasado) y facilitar el seguimiento de los envíos.
-Permitir consultas y generación de reportes que ayuden a la planificación y gestión de los envíos.
-
+- Registrar y mantener información detallada sobre clientes, paquetes, rutas, vehículos, conductores y sucursales.
+- Controlar los estados de los paquetes (Pendiente, En tránsito, Entregado, Retrasado) y facilitar el seguimiento de los envíos.
+- Permitir consultas y generación de reportes que ayuden a la planificación y gestión de los envíos.
 
 ## CAPITULO II: MARCO CONCEPTUAL O REFERENCIAL
 
-**TEMA 1 " ---- "**
-
-**TEMA 2 " ----- "**
-
-
-...
-
 ## CAPÍTULO III: METODOLOGÍA SEGUIDA
-
-**Aca va una intro ma o meno**
-
-**a) Cómo se realizó el Trabajo Práctico**
-
-
-**b) Herramientas (Instrumentos y procedimientos)**
-
 
 ## CAPÍTULO IV: DESARROLLO DEL TEMA / PRESENTACIÓN DE RESULTADOS
 
-
-
-### Diagrama conceptual (opcional)
-
-Ejemplo usando Live Editor https://mermaid.js.org/ (ejemplo opcional)
-
-```mermaid
-erDiagram
-CUSTOMER  }|..|{  DELIVERY-ADDRESS  : has
-CUSTOMER  ||--o{  ORDER  : places
-CUSTOMER  ||--o{  INVOICE  : "liable for"
-DELIVERY-ADDRESS  ||--o{  ORDER  : receives
-INVOICE  ||--|{  ORDER  : covers
-ORDER  ||--|{  ORDER-ITEM  : includes
-PRODUCT-CATEGORY  ||--|{  PRODUCT  : contains
-PRODUCT  ||--o{  ORDER-ITEM  : "ordered in"
-```
-
 ### Diagrama relacional
 
-![diagrama_relacional](https://github.com/dovillegas/basesdatos_proyecto_estudio/blob/main/doc/image_relational.png)
+![diagrama_relacional](https://github.com/SergiNavarr/basesdedatos_proyecto_estudio/tree/main/doc/Modelo_Relacional.png)
 
 ### Diccionario de datos
 
-Acceso al documento [PDF](doc/diccionario_datos.pdf) del diccionario de datos.
-
-### Desarrollo TEMA 1 "----"
-
-Fusce auctor finibus lectus, in aliquam orci fermentum id. Fusce sagittis lacus ante, et sodales eros porta interdum. Donec sed lacus et eros condimentum posuere.
-
-> Acceder a la siguiente carpeta para la descripción completa del tema [scripts-> tema_1](script/tema01_nombre_tema)
-
-### Desarrollo TEMA 2 "----"
-
-Proin aliquet mauris id ex venenatis, eget fermentum lectus malesuada. Maecenas a purus arcu. Etiam pellentesque tempor dictum.
-
-> Acceder a la siguiente carpeta para la descripción completa del tema [scripts-> tema_2](script/tema02_nombre_tema)
-
-...
+Acceso al documento [PDF](doc/DiccionarioDeDatos.pdf) del diccionario de datos.
 
 ## CAPÍTULO V: CONCLUSIONES
 
-
-
 ## BIBLIOGRAFÍA DE CONSULTA
-
-1.  List item
-2.  List item
-3.  List item
-4.  List item
-5.  List item
