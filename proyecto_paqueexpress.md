@@ -25,6 +25,20 @@ El tema se enfoca en la optimización de los procesos de envío y seguimiento de
 
 En las empresas de transporte de paqueteria, uno de los principales problemas es la falta de un sistema centralizado que permita gestionar de manera eficiente los envios. La informacion sobre paquetes, rutas, vehiculos y conductores a menudo se encuentra dispersa o registrada manualmente, lo que genera errores, retrasos y dificultades para hacer seguimiento de los envios. Este trabajo práctico plantea como problema: ¿Cómo diseñar una base de datos que permita controlar y registrar de manera eficiente toda la información relacionada con los envios de paqueteria, garantizando trazabilidad, integridad de datos y soporte para la toma de decisiones?
 
+### Objetivo del Trabajo Práctico
+El objetivo del trabajo práctico es desarrollar una base de datos que permita gestionar de manera eficiente los envíos de paquetes, controlando clientes, paquetes, rutas, vehículos, empleados y sucursales, y facilitando la consulta y generación de reportes sobre los procesos de envío.
+
+### Objetivo Generales
+
+Diseñar e implementar un sistema de base de datos que centralice la información de los envíos de paquetería, garantizando la integridad de los datos y la trazabilidad de cada paquete.
+
+### Objetivos Específicos
+
+Registrar y mantener información detallada sobre clientes, paquetes, rutas, vehículos, conductores y sucursales.
+Controlar los estados de los paquetes (Pendiente, En tránsito, Entregado, Retrasado) y facilitar el seguimiento de los envíos.
+Permitir consultas y generación de reportes que ayuden a la planificación y gestión de los envíos.
+
+
 ## CAPITULO II: MARCO CONCEPTUAL O REFERENCIAL
 
 **TEMA 1 " ---- "**
