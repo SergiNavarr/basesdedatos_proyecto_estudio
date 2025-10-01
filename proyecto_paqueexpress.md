@@ -46,7 +46,7 @@ Diseñar e implementar un sistema de base de datos que centralice la informació
 
 ### Diagrama relacional
 
-![diagrama_relacional](https://github.com/SergiNavarr/basesdedatos_proyecto_estudio/tree/main/doc/Modelo_Relacional.png)
+![diagrama_relacional](https://raw.githubusercontent.com/SergiNavarr/basesdedatos_proyecto_estudio/main/doc/Modelo_Relacional.png)
 
 ### Diccionario de datos
 
