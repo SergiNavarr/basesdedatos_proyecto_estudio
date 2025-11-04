@@ -8,7 +8,7 @@
 
 1. Introducción / Objetivos
 
-Este informe tiene como proposito el explicar qué son y cuándo usar procedimientos almacenados (stored procedures) y funciones almacenadas (user-defined functions), muestra ejemplos implementados sobre la estructura del proyecto PaqueExpress cumple las tareas pedidas:
+- Este informe tiene como proposito el explicar qué son y cuándo usar procedimientos almacenados (stored procedures) y funciones almacenadas (user-defined functions), muestra ejemplos implementados sobre la estructura del proyecto PaqueExpress cumple las tareas pedidas:
 - Objetivos de Aprendizaje:
   - Comprender la diferencia entre procedimientos y funciones almacenadas.
   - Aplicar procedimientos y funciones en la implementación de operaciones CRUD.
@@ -334,3 +334,4 @@ WiseOwl (tutorial) — Calculating age in SQL Server (DATEDIFF + DATEADD recomme
 wiseowl.co.uk
 
 SQLServerCentral / StackOverflow — buenas prácticas y debates sobre SPs/UDFs y rendimiento. 
+
