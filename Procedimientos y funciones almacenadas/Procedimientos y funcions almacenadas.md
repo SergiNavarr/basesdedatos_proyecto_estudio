@@ -219,7 +219,7 @@ GO
 
 Las referencias y el método de cálculo recomendado es (DATEDIFF+DATEADD) para edad/antigüedad. 
 
-### 5.2. fn_ConvertKgToLb — convertir kg a libras
+### 5.2. fn_ConvertKgToLb — convertir kg a libras (Modificar)
 ```sql
 CREATE OR ALTER FUNCTION dbo.fn_ConvertKgToLb(@Kg DECIMAL(10,2))
 RETURNS DECIMAL(10,2)
@@ -334,4 +334,5 @@ WiseOwl (tutorial) — Calculating age in SQL Server (DATEDIFF + DATEADD recomme
 wiseowl.co.uk
 
 SQLServerCentral / StackOverflow — buenas prácticas y debates sobre SPs/UDFs y rendimiento. 
+
 
