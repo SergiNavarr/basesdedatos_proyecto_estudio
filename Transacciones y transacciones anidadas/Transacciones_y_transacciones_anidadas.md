@@ -41,7 +41,8 @@ A continuación, se presentan los tres pasos (transacción exitosa, transacción
 Primero se define una transacción principal con BEGIN TRANSACTION.
 En esta transacción se realiza la inserción del paquete, la
 creación del envío asociado y el registro del historial inicial.
-*/
+
+```sql
 BEGIN TRANSACTION
 
 BEGIN TRY
@@ -70,6 +71,7 @@ BEGIN CATCH
     PRINT '❌ (Paso 1) Error detectado. Se revirtió toda la transacción.';
     PRINT ERROR_MESSAGE();
 END CATCH;
+```
 
 ## PASO 2: SIMULACIÓN DE ERROR Y VERIFICACIÓN DE ROLLBACK
 Para comprobar el funcionamiento del control de errores, se
@@ -77,6 +79,7 @@ provoca intencionalmente un error entre la inserción del
 paquete y la del envío, introduciendo un valor de clave
 foránea inválido (id_ruta = 9999)
 
+```sql
 BEGIN TRANSACTION
 
 BEGIN TRY
@@ -98,7 +101,7 @@ BEGIN CATCH
     PRINT '❌ (Paso 2) Error detectado. Se ejecutó ROLLBACK.';
     PRINT ERROR_MESSAGE();
 END CATCH;
-
+```
 
 
 ### Verificación (Manual):
@@ -113,6 +116,7 @@ confirmando que la transacción se revirtió correctamente.
 Para mayor granularidad, puede implementarse una transacción
 anidada donde el registro en historial_envio se maneja como
 subtransacción.
+```sql
 BEGIN TRANSACTION
 BEGIN TRY
     -- Transacción principal
@@ -144,3 +148,4 @@ BEGIN CATCH
     PRINT '❌ (Paso 3) Error general. Se revirtió todo.';
     PRINT ERROR_MESSAGE();
 END CATCH;
+```
