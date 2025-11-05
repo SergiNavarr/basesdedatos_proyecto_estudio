@@ -124,3 +124,95 @@ SELECT @Hora_BackupLog2 AS HoraBackupLog2;
 -- Cantidad actual de registros antes de realizar la restauración
 SELECT COUNT(*) AS Cantidad_Paquetes_Actual FROM paquete;
 SELECT COUNT(*) AS Cantidad_Envios_Actual FROM envio;
+
+
+-- ******************* RESTAURACIÓN A: Restaurar hasta el primer backup de log *******************
+
+-- Cambiar a la base de datos master para evitar conflictos con PaqueExpress
+USE master;
+GO
+
+-- Pone la base de datos PaqueExpress en modo SINGLE_USER para evitar conexiones activas
+ALTER DATABASE PaqueExpress SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+GO
+
+-- Restaurar el backup completo (FULL) de la base de datos
+RESTORE DATABASE PaqueExpress
+FROM DISK = N'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress_FULL.bak'
+WITH NORECOVERY,  -- Deja la base de datos en estado "restaurado" pero pendiente de aplicar logs
+     REPLACE,      
+     MOVE 'PaqueExpress' TO 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress.mdf',
+     MOVE 'PaqueExpress_log' TO 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress_log.ldf',
+     STATS = 10; 
+GO
+
+-- Aplica el primer archivo de log y deja la base en modo listo para su uso
+RESTORE LOG PaqueExpress
+FROM DISK = N'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress_Log1.trn'
+WITH RECOVERY,  -- Finaliza la recuperación y deja la base lista para su uso
+     STATS = 10;
+GO
+
+-- Devuelve la base a modo MULTI_USER, permitiendo accesos concurrentes
+ALTER DATABASE PaqueExpress SET MULTI_USER;
+GO
+
+
+--------------------- VERIFICACIÓN POST RESTORE A ---------------------
+USE PaqueExpress;
+GO
+
+-- Cuenta los registros después de restaurar con Log1
+SELECT COUNT(*) AS Paquetes_Post_RestoreLog1 FROM paquete;
+SELECT COUNT(*) AS Envios_Post_RestoreLog1 FROM envio;
+
+-- Muestra los últimos 30 envíos para inspección
+SELECT TOP (30) * FROM envio ORDER BY id_envio DESC;
+
+
+-- ******************* RESTAURACIÓN B: Aplicar ambos logs (Log1 + Log2) *******************
+
+USE master;
+GO
+
+ALTER DATABASE PaqueExpress SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+GO
+
+-- Restaurar el backup completo (FULL) sin recuperación
+RESTORE DATABASE PaqueExpress
+FROM DISK = N'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress_FULL.bak'
+WITH NORECOVERY,  
+     REPLACE,     
+     MOVE 'PaqueExpress' TO 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress.mdf',
+     MOVE 'PaqueExpress_log' TO 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress_log.ldf',
+     STATS = 10;
+GO
+
+-- Aplica el primer archivo de log (sin recuperación aún)
+RESTORE LOG PaqueExpress
+FROM DISK = N'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress_Log1.trn'
+WITH NORECOVERY,  -- Mantiene la base en estado "restaurado", esperando el siguiente log
+     STATS = 10;
+GO
+
+-- Aplica el segundo archivo de log y finaliza la recuperación
+RESTORE LOG PaqueExpress
+FROM DISK = N'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Backup\PaqueExpress_Log2.trn'
+WITH RECOVERY,   
+     STATS = 10;
+GO
+
+ALTER DATABASE PaqueExpress SET MULTI_USER;
+GO
+
+--------------------- VERIFICACIÓN POST RESTORE B ---------------------
+
+USE PaqueExpress;
+GO
+
+-- Cuenta registros después de aplicar ambos logs
+SELECT COUNT(*) AS Paquetes_Post_RestoreLog2 FROM paquete;
+SELECT COUNT(*) AS Envios_Post_RestoreLog2 FROM envio;
+
+-- Muestra los 50 envíos más recientes para verificar restauración completa
+SELECT TOP (50) * FROM envio ORDER BY id_envio DESC, id_paquete DESC;
