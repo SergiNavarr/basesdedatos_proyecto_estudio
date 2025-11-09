@@ -1,151 +1,73 @@
-# Uso de Transacciones y Transacciones Anidadas en SQL Server
+# TEMA: Transacciones y Transacciones Anidadas en SQL Server
 
-## Introducción
-
-Este documento describe el procedimiento seguido para implementar una transacción en SQL Server con el objetivo de asegurar la **consistencia y atomicidad** de los datos durante el proceso de registro de un nuevo envío en el sistema logístico.
-
-La transacción agrupa tres operaciones dependientes:
-
-1.  Inserción de un nuevo registro en la tabla **`paquete`**
-2.  Inserción de un registro asociado en la tabla **`envio`**
-3.  Registro del historial del estado inicial en **`historial_envio`**
-
-De esta forma, se garantiza que los datos solo se actualicen si todas las operaciones se completan correctamente.
-También se incluye una simulación de error intencional para verificar el comportamiento del **ROLLBACK** y demostrar la integridad del modelo de datos.
+Las transacciones en SQL Server son un componente fundamental para garantizar la integridad, coherencia y confiabilidad de la información en bases de datos. Esto es especialmente importante en sistemas donde múltiples instrucciones deben ejecutarse como un proceso único, evitando resultados parciales o inconsistentes ante cualquier falla.
 
 ---
 
-## Objetivo
+## ¿Qué son las Transacciones?
 
-El propósito de este procedimiento es demostrar el uso de **transacciones simples y anidadas** para garantizar la integridad de los datos dentro del sistema.
+Una transacción es una unidad lógica de trabajo que agrupa una o varias operaciones. Su propósito es asegurar que todas esas operaciones se ejecuten completamente o, en caso contrario, ninguna de ellas se aplique. Este comportamiento evita que la base de datos quede en un estado incorrecto si surge algún problema durante la ejecución.
 
-En particular, se busca asegurar que si ocurre algún error durante la creación del envío (por ejemplo, una referencia inexistente en alguna clave foránea), **ningún registro parcial quede almacenado**, preservando la coherencia del sistema.
+Para manejar el funcionamiento de una transacción, SQL Server utiliza tres instrucciones esenciales:
 
----
+- **Begin Transaction**: marca el inicio de la transacción.
+- **Commit**: confirma y guarda de forma permanente los cambios realizados.
+- **Rollback**: revierte todos los cambios que se hayan efectuado desde el inicio de la transacción si ocurre un error.
 
-## Requisitos Previos
-
--   Base de datos con las tablas `paquete`, `envio`, `historial_envio` y sus relaciones de clave externa correctamente definidas.
--   Permisos para ejecutar transacciones y manipular datos en SQL Server.
--   Configuración adecuada del esquema de relaciones (cliente, ruta, vehículo, empleado, estado_envio).
+Este mecanismo se basa en las propiedades ACID, las cuales garantizan atomicidad, consistencia, aislamiento y durabilidad. Gracias a esto, la base de datos mantiene su fiabilidad incluso en situaciones inesperadas como interrupciones de red, errores de programación o fallas del servidor.
 
 ---
 
-## Procedimiento
+## ¿Qué son las Transacciones Anidadas?
 
-A continuación, se presentan los tres pasos (transacción exitosa, transacción fallida y transacción anidada) dentro de un único script.
+Las transacciones anidadas son transacciones declaradas dentro de otra transacción ya existente. Aunque el desarrollador pueda iniciar múltiples transacciones dentro de una misma operación, SQL Server considera que solo la transacción más externa es la que determina el resultado final.
 
+Esto implica que:
 
-## PASO 1: CREACIÓN DE LA TRANSACCIÓN PRINCIPAL (ÉXITO)
+- Una transacción interna puede “completarse”, pero sus cambios no se almacenan de forma definitiva.
+- La confirmación real ocurre recién cuando la transacción principal ejecuta una confirmación global.
+- Si la transacción principal decide revertir los cambios, todas las operaciones internas también se revierten, aunque alguna de ellas haya sido “confirmada” individualmente.
 
-Primero se define una transacción principal con BEGIN TRANSACTION.
-En esta transacción se realiza la inserción del paquete, la
-creación del envío asociado y el registro del historial inicial.
+Las transacciones anidadas son útiles cuando se quiere estructurar la lógica en múltiples bloques, pero sin perder control centralizado sobre el resultado final.
 
-```sql
-BEGIN TRANSACTION
+---
 
-BEGIN TRY
-    -- 1️⃣ Inserción del nuevo paquete
-    INSERT INTO paquete (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
-    VALUES (3.75, '40x30x25', 2500.00, 1, 2, 3);
+## ¿Qué es un Savepoint?
 
-    DECLARE @idPaquete INT = SCOPE_IDENTITY();
+Un savepoint funciona como un punto de guardado dentro de una transacción. Es una marca que permite deshacer una parte específica de la transacción sin tener que revertirla completa.
 
-    -- 2️⃣ Inserción del nuevo envío asociado
-    INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
-    VALUES (GETDATE(), @idPaquete, 1, 1, 5, 1);
+En otras palabras:
 
-    DECLARE @idEnvio INT = SCOPE_IDENTITY();
+- Permite cancelar solo una sección del proceso.
+- Mantiene intactos los cambios anteriores al punto de guardado.
+- Evita reiniciar operaciones costosas por culpa de un error localizado.
 
-    -- 3️⃣ Registro del estado inicial en el historial
-    INSERT INTO historial_envio (id_envio, fecha_hora, id_estado, observaciones)
-    VALUES (@idEnvio, GETDATE(), 1, 'Envío creado correctamente.');
+Este mecanismo resulta conveniente cuando algunos pasos son secundarios o no esenciales para completar el proceso principal. Si ocurre un fallo en esa área opcional, no es necesario cancelar toda la transacción. En su lugar, basta con volver al savepoint y continuar desde allí.
 
-    COMMIT TRANSACTION;
-    PRINT '✅ (Paso 1) Transacción completada correctamente.';
+---
 
-END TRY
-BEGIN CATCH
-    ROLLBACK TRANSACTION;
-    PRINT '❌ (Paso 1) Error detectado. Se revirtió toda la transacción.';
-    PRINT ERROR_MESSAGE();
-END CATCH;
-```
+## Importancia y Ventajas
 
-## PASO 2: SIMULACIÓN DE ERROR Y VERIFICACIÓN DE ROLLBACK
-Para comprobar el funcionamiento del control de errores, se
-provoca intencionalmente un error entre la inserción del 
-paquete y la del envío, introduciendo un valor de clave
-foránea inválido (id_ruta = 9999)
+El uso de transacciones es esencial cuando:
 
-```sql
-BEGIN TRANSACTION
+- Un conjunto de operaciones depende de que todas sean correctas.
+- Es necesario evitar datos incompletos o contradictorios.
+- Existen relaciones entre tablas que no pueden quedar en estado inconsistente.
+- Se requiere confiabilidad absoluta ante fallas.
 
-BEGIN TRY
-    -- 1️⃣ Inserción del paquete
-    INSERT INTO paquete (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
-    VALUES (2.10, '20x20x20', 900.00, 1, 2, 3);
+Las transacciones anidadas y los savepoints resultan útiles cuando:
 
-    DECLARE @idPaquetePaso2 INT = SCOPE_IDENTITY();
+- Se gestionan procesos complejos con múltiples pasos internos.
+- Solo una parte del proceso puede fallar sin invalidar todo lo anterior.
+- Un error secundario no debe impedir que el proceso principal finalice correctamente.
+- Se busca mejorar el control y la flexibilidad del manejo de errores.
 
-    -- 2️⃣ Inserción con error intencional (ruta inexistente)
-    INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
-    VALUES (GETDATE(), @idPaquetePaso2, 9999, 1, 5, 1);
+Por ejemplo, en una aplicación logística, el cambio de estado de un envío es más importante que registrar un mensaje descriptivo de ese cambio. Si la anotación del historial fallara, el sistema podría conservar el estado actualizado y descartar solo el registro complementario, evitando repetir todo el proceso desde el principio.
 
-    COMMIT TRANSACTION;
-    PRINT '✅ (Paso 2) Transacción completada.';
-END TRY
-BEGIN CATCH
-    ROLLBACK TRANSACTION;
-    PRINT '❌ (Paso 2) Error detectado. Se ejecutó ROLLBACK.';
-    PRINT ERROR_MESSAGE();
-END CATCH;
-```
+---
 
+## Conclusión
 
-### Verificación (Manual):
-Al consultar la tabla paquete después de ejecutar este paso, 
-se observa que no quedó insertado ningún registro, 
-confirmando que la transacción se revirtió correctamente.
+Las transacciones permiten que varias operaciones trabajen de manera unificada, protegiendo la integridad de los datos. Las transacciones anidadas y los savepoints amplían este control, ofreciendo mecanismos para recuperar parcialmente el proceso sin perder la operación completa.
 
-
-
-## PASO 3: USO DE TRANSACCIONES ANIDADAS (OPCIONAL)
-
-Para mayor granularidad, puede implementarse una transacción
-anidada donde el registro en historial_envio se maneja como
-subtransacción.
-```sql
-BEGIN TRANSACTION
-BEGIN TRY
-    -- Transacción principal
-    INSERT INTO paquete (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
-    VALUES (5.00, '50x40x30', 3200.00, 1, 2, 3);
-    DECLARE @idPaquetePaso3 INT = SCOPE_IDENTITY();
-
-    INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
-    VALUES (GETDATE(), @idPaquetePaso3, 1, 1, 5, 1);
-    DECLARE @idEnvioPaso3 INT = SCOPE_IDENTITY();
-
-    -- Subtransacción
-    SAVE TRANSACTION SubHistorial;
-    BEGIN TRY
-        INSERT INTO historial_envio (id_envio, fecha_hora, id_estado, observaciones)
-        VALUES (@idEnvioPaso3, GETDATE(), 1, 'Transacción anidada completada.');
-    END TRY
-    BEGIN CATCH
-        ROLLBACK TRANSACTION SubHistorial;
-        PRINT '⚠️ (Paso 3) Error dentro de la transacción anidada.';
-    END CATCH
-
-    COMMIT TRANSACTION;
-    PRINT '✅ (Paso 3) Transacción principal confirmada.';
-
-END TRY
-BEGIN CATCH
-    ROLLBACK TRANSACTION;
-    PRINT '❌ (Paso 3) Error general. Se revirtió todo.';
-    PRINT ERROR_MESSAGE();
-END CATCH;
-```
+Su implementación adecuada evita inconsistencias, garantiza confiabilidad y mejora la robustez de cualquier aplicación que dependa de bases de datos transaccionales, especialmente en sistemas críticos donde la precisión de los datos es indispensable.
