@@ -1,14 +1,14 @@
 # Universidad Nacional del Nordeste
-# Facultad de Ciencias Exactas Naturales y Agrimensura
-## Cátedra: Bases de Datos I
-### Informe: Procedimientos y Funciones Almacenadas — *Proyecto PaqueExpress*
+## Facultad de Ciencias Exactas Naturales y Agrimensura
+### Cátedra: Bases de Datos I
+#### Informe: Procedimientos y Funciones Almacenadas — *Proyecto PaqueExpress*
 **Autor:** Saul Agustín Arníca  
 **Fecha:** Noviembre 2025
 ---
 
-1. Introducción / Objetivos
+## 1. Introducción / Objetivos
 
-- Este informe tiene como proposito el explicar qué son y cuándo usar procedimientos almacenados (stored procedures) y funciones almacenadas (user-defined functions), muestra ejemplos implementados sobre la estructura del proyecto PaqueExpress cumple las tareas pedidas:
+- Este informe tiene como proposito el explicar qué son y cuándo usar procedimientos almacenados (stored procedures) y funciones almacenadas (user-defined functions), muestra ejemplos implementados sobre la estructura del proyecto PaqueExpress y cumple con las tareas pedidas:
 - Objetivos de Aprendizaje:
   - Comprender la diferencia entre procedimientos y funciones almacenadas.
   - Aplicar procedimientos y funciones en la implementación de operaciones CRUD.
@@ -23,11 +23,11 @@
 
 - Ejecutar UPDATE y DELETE mediante procedimientos.
 
-- Implementar 3 funciones de ejemplo (cálculo de antigüedad/edad, conversión de peso, clasificación de riesgo).
+- Implementar 3 funciones de ejemplo (cálculo de antigüedad/edad, cálculo del peso volumetrico del paquete, clasificación de riesgo).
 
 - Comparar eficiencia y buenas prácticas.
 
-2. Conceptos clave
+## 2. Conceptos clave
 
 - *Procedimiento almacenado (Stored Procedure):* Es un bloque de T-SQL(Transact-SQL) compilado que puede ejecutar operaciones (SELECT/INSERT/UPDATE/DELETE), recibir parámetros (IN/OUT), y realizar lógica de negocio compleja. Mejora el rendimiento (plan cached), reduce el tráfico de red y centraliza la lógica. 
 
@@ -35,7 +35,7 @@
 
 - *Diferencias claves:* los procedimientos pueden modificar datos y usar transacciones; las funciones se usan para cálculos y su uso dentro de SELECT/WHERE es más natural. También hay restricciones de determinismo y funciones no deterministas (ej. GETDATE()) que afectan optimizaciones.
 
-3. Buenas prácticas 
+## 3. Buenas prácticas 
 
   - Usar SET NOCOUNT ON al inicio del SP (reduce mensajes de filas afectadas). 
 
@@ -219,17 +219,42 @@ GO
 
 Las referencias y el método de cálculo recomendado es (DATEDIFF+DATEADD) para edad/antigüedad. 
 
-### 5.2. fn_ConvertKgToLb — convertir kg a libras (Modificar)
+### 5.2. fn_PesoVolumetrico
+
+  Parámetros:  
+      @AltoCM-> Alto del paquete en centímetros  
+      @AnchoCM-> Ancho del paquete en centímetros  
+      @LargoCM-> Largo del paquete en centímetros  
+  Retorna:
+      DECIMAL(10,2) -> Peso volumétrico en kilogramos
+     
+  Fórmula:
+      PesoVolumétrico = (Alto * Ancho * Largo) / 5000
+
 ```sql
-CREATE OR ALTER FUNCTION dbo.fn_ConvertKgToLb(@Kg DECIMAL(10,2))
+CREATE OR ALTER FUNCTION dbo.fn_PesoVolumetrico
+(
+    @AltoCM DECIMAL(10,2),
+    @AnchoCM DECIMAL(10,2),
+    @LargoCM DECIMAL(10,2)
+)
 RETURNS DECIMAL(10,2)
 AS
 BEGIN
-    RETURN ROUND(@Kg * 2.2046226218, 2);
+    -- Validación básica: si algún valor es NULL, no puede calcularse el peso volumétrico
+    IF @AltoCM IS NULL OR @AnchoCM IS NULL OR @LargoCM IS NULL
+        RETURN NULL;
+
+    -- Devuelve el peso volumétrico redondeado a 2 decimales
+    RETURN ROUND((@AltoCM * @AnchoCM * @LargoCM) / 5000, 2);
 END
 GO
 ```
+
+Calcula el peso volumétrico (en kg) de un paquete segun la formula estandar utilizada por servicios de correo y logística en Argentina, donde el divisor habitual es de 5000 para cm³.
+
 ### 5.3. fn_PaqueteEsAltoRiesgo — determina riesgo por valor_declarado
+
 ```sql
 CREATE OR ALTER FUNCTION dbo.fn_PaqueteEsAltoRiesgo(@ValorDeclarado DECIMAL(10,2))
 RETURNS BIT
@@ -241,12 +266,15 @@ BEGIN
 END
 GO
 ```
+
 - ***Nota: en caso de necesitar funciones que devuelvan conjuntos (ej. listado de envíos con último estado) conviene usar inline table-valued functions por rendimiento frente a UDF escalares con loops.***
 
 ## 6. Scripts de carga (lote) — ejemplos
 ### 6.1. Lote de INSERTs directos (pequeño ejemplo)
 -- Provincias / ciudades / direcciones
+
 ```sql
+
 INSERT INTO dbo.provincia (nombre) VALUES ('Buenos Aires'), ('Cordoba');
 INSERT INTO dbo.ciudad (nombre, id_provincia) VALUES ('Cordoba', 2), ('La Plata', 1);
 
@@ -254,7 +282,9 @@ INSERT INTO dbo.direccion (calle, numero, piso_depto, codigo_postal, id_ciudad)
 VALUES ('Av. Siempre Viva', '123', NULL, '5000', 2),
        ('Calle Falsa', '742', '1A', '1900', 1);
 ```
+
 -- Roles y sucursales
+
 ```sql
 INSERT INTO dbo.rol (nombre_rol) VALUES ('Repartidor'), ('Admin');
 INSERT INTO dbo.sucursal (nombre, id_direccion) VALUES ('Sucursal Centro', 1), ('Sucursal Norte', 2);
@@ -268,30 +298,54 @@ VALUES ('Juan', 'Perez', '12345678', 'juan.perez@example.com', 1),
 INSERT INTO dbo.tipo_paquete (descripcion) VALUES ('Sobre'), ('Caja');
 INSERT INTO dbo.estado_envio (nombre_estado) VALUES ('Registrado'), ('En tránsito'), ('Entregado');
 ```
+
 ### 6.2. Lote usando procedimientos (ejemplo de uso)
 - Ejemplo de insercion utilizando los procedimientos almacenados desarrollados
 ```sql
+
 DECLARE @NewId INT;
 ```
+
 -- Insert cliente via sp
 ```sql
+
 EXEC dbo.sp_InsertCliente @Nombre='Luis', @Apellido='Martinez', @DNI='33445566', @Email='luis.m@example.com', @IdDireccion=1, @NewId=@NewId OUTPUT;
 SELECT 'Cliente creado' AS Info, @NewId AS IdNuevo;
 ```
+
 -- Insert paquete via sp
+
 ```sql
 EXEC dbo.sp_InsertPaquete @Peso=2.5, @Dimensiones='30x20x10', @ValorDeclarado=15000, @IdTipoPaquete=2, @IdClienteOrigen=1, @IdClienteDestino=2, @NewId=@NewId OUTPUT;
 SELECT 'Paquete creado' AS Info, @NewId AS IdNuevo;
 ```
+
 ### 6.3. Update/delete invocando a los SPs
 -- Actualizar email de cliente
+
 ```sql
 EXEC dbo.sp_UpdateCliente @IdCliente=1, @Email='nuevo.email@example.com';
 ```
+
 -- Borrar cliente (si no tiene referencias)
 ```sql
 EXEC dbo.sp_DeleteCliente @IdCliente=3;
 ```
+
+### 6.4 Calcular el peso facturable del paquete
+```sql
+SELECT 
+    peso_real_kg,                                             -- Peso real del paquete registrado en la BD
+    dbo.fn_PesoVolumetrico(alto_cm, ancho_cm, largo_cm) 
+        AS peso_vol,                                          -- Peso volumétrico calculado
+    CASE 
+        WHEN peso_real_kg > dbo.fn_PesoVolumetrico(alto_cm, ancho_cm, largo_cm)
+             THEN peso_real_kg                                -- Si el peso real es mayor, se factura ese
+             ELSE dbo.fn_PesoVolumetrico(alto_cm, ancho_cm, largo_cm)
+    END AS peso_facturable                                    -- Peso final que se utiliza para cobrar
+FROM paquete;
+```
+
 ## 7. Comparación: operaciones directas vs uso de procedimientos/funciones
 
 ### 7.1. Ventajas de usar procedimientos y funciones
@@ -334,5 +388,3 @@ WiseOwl (tutorial) — Calculating age in SQL Server (DATEDIFF + DATEADD recomme
 wiseowl.co.uk
 
 SQLServerCentral / StackOverflow — buenas prácticas y debates sobre SPs/UDFs y rendimiento. 
-
-
