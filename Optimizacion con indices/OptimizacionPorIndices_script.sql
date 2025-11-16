@@ -41,31 +41,44 @@ Registrar el plan de ejecución utilizado por el motor y los tiempos de respuesta
 
 -- 1) Realizar una carga masiva de por lo menos un millón de registro sobre alguna tabla que contenga un campo fecha (sin índice). Hacerlo con un script para poder automatizarlo.
 
+SET NOCOUNT ON;
+
 --Declaramos variables
-DECLARE @i INT = 0;
-DECLARE @MaxEnvios INT = 1000000; --Numero total de registros a insertar
+DECLARE @i INT = 1;
+DECLARE @max INT = 1000000; --Numero total de registros a insertar
 
-WHILE @i < @MaxEnvios
+-- Variables para los campos del INSERT
+DECLARE @fecha DATE;
+DECLARE @id_paquete INT;
+DECLARE @id_ruta INT;
+DECLARE @id_vehiculo INT;
+DECLARE @id_empleado INT;
+DECLARE @id_estado INT;
+
+WHILE @i <= @max
 BEGIN
-    INSERT INTO envio (
-        fecha_registro,
-        id_paquete,
-        id_ruta,
-        id_vehiculo,
-        id_empleado_responsable,
-        id_estado_actual
-    )
-    VALUES (
-        DATEADD(DAY, ABS(CHECKSUM(NEWID())) % 1826, '2020-01-01'), -- fecha aleatoria entre 2020-01 y 2025-01
-        (@i % 4) + 1,  -- id_paquete entre 1 y 4
-        (@i % 5) + 1,  -- id_ruta entre 1 y 5
-        (@i % 4) + 1,  -- id_vehiculo entre 1 y 4
-        (@i % 4) + 1,  -- id_empleado entre 1 y 4
-        (@i % 4) + 1   -- id_estado entre 1 y 4
-    );
+   -- Genera una fecha aleatoria entre 2015 y 2025
+    SET @fecha = DATEADD(
+                    DAY, 
+                    ABS(CHECKSUM(@i * RAND() * 3)) % 3650,
+                    '2015-01-01'
+                );
+    -- Valores pseudoaleatorios para claves foraneas
+    SET @id_paquete    = ((ABS(CHECKSUM(@i * 7     + RAND()*100)) % 50) + 1); -- 1-50
+    SET @id_ruta       = ((ABS(CHECKSUM(@i * 11    + RAND()*200)) % 20) + 1); -- 1-20
+    SET @id_vehiculo   = ((ABS(CHECKSUM(@i * 13    + RAND()*150)) % 10) + 1); -- 1-10
+    SET @id_empleado   = ((ABS(CHECKSUM(@i * 17    + RAND()*90 )) % 20) + 1); -- 1-20
+    SET @id_estado     = ((ABS(CHECKSUM(@i * 19    + RAND()*50 )) % 6 ) + 1); -- 1-6
 
-    SET @i += 1;  -- Incrementa el contador
+    -- Insercion final
+    INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
+    VALUES (@fecha, @id_paquete, @id_ruta, @id_vehiculo, @id_empleado, @id_estado);
+
+    -- Incremento del contador
+    SET @i = @i + 1;
 END;
+SET NOCOUNT OFF;
+
 
 -- Crea una nueva tabla "envio_2" como copia de "envio", sin indices
 SELECT *
@@ -75,65 +88,60 @@ FROM envio;
 -- 2) Realizar una búsqueda por periodo y registrar el plan de ejecución utilizado por el motor 
 --y los tiempos de respuesta.
 
+
 SET STATISTICS TIME ON;  -- Muestra tiempo de ejecucion (CPU y total)
 SET STATISTICS IO ON;   -- Muestra operaciones de lectura/escritura
 
+--Plan de ejecucion "Table Scan"
+--Consulta por periodo tabla sin indice
 SELECT *
 FROM envio_2
-WHERE fecha_registro BETWEEN '2022-01-01' AND '2023-01-01';
---Plan utilizado "Table SCAN"  (escaneo completo de la tabla)
+WHERE fecha_registro BETWEEN '2018-01-01' AND '2025-01-01';
 
+--Resultados de la consulta:
+--Columnas devueltas: 699.666 // Tiempos (3 intentos):  CPU time = 1079 ms,  elapsed time = 4891 ms. // CPU time = 1063 ms,  elapsed time = 4561 ms. // CPU time = 563 ms,  elapsed time = 4890 ms.
+--Lecturas logicas obtenidas: Table 'envio_2'. Scan count 1, logical reads 4465
+
+--Plan de ejecucion "Clustered Index Scan"
+--Consulta por periodo tabla con indice
 SELECT *
 FROM envio
-WHERE fecha_registro BETWEEN '2022-01-01' AND '2023-01-01';
---Plan utilizado "Clustered Index Scan" (escaneo del índice agrupado)
+WHERE fecha_registro BETWEEN '2018-01-01' AND '2025-01-01';
 
---Ahora realizaremos una serie de consultas para verificar los tiempos con el plan "Table Scan" 
--- Consulta 1: rango medio
-SELECT *
-FROM envio_2
-WHERE fecha_registro BETWEEN '2022-01-01' AND '2023-01-01';
---Columnas devueltas: 201.152 // Tiempos (3 intentos): CPU time = 437 ms,  elapsed time = 1494 ms. // CPU time = 532 ms,  elapsed time = 1400 ms. // CPU time = 672 ms,  elapsed time = 1373 ms.
--- Consulta 2: rango estrecho
-SELECT *
-FROM envio_2
-WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-06-01';
---Columnas devueltas: 84.135 // Tiempos (3 intentos):   CPU time = 407 ms,  elapsed time = 833 ms. // CPU time = 375 ms,  elapsed time = 724 ms. // CPU time = 313 ms,  elapsed time = 623 ms.
+--Resultados de la consulta:
+--Columnas devueltas: 699.666 // Tiempos (3 intentos): CPU time = 953 ms,  elapsed time = 4633 ms. //  CPU time = 906 ms,  elapsed time = 4548 ms. //   CPU time = 875 ms,  elapsed time = 4667 ms.
+--Lecturas logicas obtenidas: Table 'envio'. Scan count 1, logical reads 4483
 
---Consulta 3: rango amplio
-SELECT *
-FROM envio_2
-WHERE fecha_registro BETWEEN '2020-01-01' AND '2024-01-01';
---Columnas devueltas: 800.608/ // Tiempos (3 intentos): CPU time = 1328 ms,  elapsed time = 7414 ms.// CPU time = 1407 ms,  elapsed time = 6639 ms.// CPU time = 1063 ms,  elapsed time = 7544 ms.
 
 SET STATISTICS TIME OFF;
 SET STATISTICS IO OFF;
 
 -- 3) Definir un índice agrupado sobre la columna fecha y repetir la consulta anterior. Registrar el plan de ejecución utilizado por el motor y los tiempos de respuesta.
 
---Tardo 00:00:04 en crear el indice 
+SET STATISTICS TIME ON;  -- Muestra tiempo de ejecucion (CPU y total)
+SET STATISTICS IO ON;   -- Muestra operaciones de lectura/escritura
+
+--Tardo 00:00:05 en crear el indice 
 --Aplicamos indice acumulado en la columna fecha_registro
 CREATE CLUSTERED INDEX IX_fecha_registro
 ON envio_2 (fecha_registro);
 
---Ahora realizaremos las mismas consultas para verificar los tiempos pero con el plan ("CLUSTERED INDEX SEEK").
+--Plan "Clustered Index Seek"
 SELECT *
 FROM envio_2
-WHERE fecha_registro BETWEEN '2022-01-01' AND '2023-01-01';
---Columnas devueltas: 201.152 // Tiempos (3 intentos):  CPU time = 250 ms,  elapsed time = 1400 ms. //   CPU time = 375 ms,  elapsed time = 1456 ms. //  CPU time = 203 ms,  elapsed time = 1467 ms.
+WHERE fecha_registro BETWEEN '2018-01-01' AND '2025-01-01';
 
-SELECT *
-FROM envio_2
-WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-06-01';
---Columnas devueltas: 84.135 // Tiempos (3 intentos):  CPU time = 62 ms,  elapsed time = 655 ms. //    CPU time = 78 ms,  elapsed time = 736 ms. //    CPU time = 78 ms,  elapsed time = 609 ms.
+--Resultados de la consulta:
+--Columnas devueltas: 699.666 // Tiempos (3 intentos): CPU time = 844 ms,  elapsed time = 5289 ms. /   CPU time = 843 ms,  elapsed time = 4530 ms. /  CPU time = 719 ms,  elapsed time = 4537 ms.
+--Lecturas logicas obtenidas: Table 'envio_2'. Scan count 1, logical reads 3815
 
+--Plan de ejecucion "Clustered Index Scan"
+--Consulta por periodo tabla con indice
 SELECT *
-FROM envio_2
-WHERE fecha_registro BETWEEN '2020-01-01' AND '2024-01-01';
---Columnas devueltas: 800.608//  Tiempos (3 intentos): CPU time = 1172 ms,  elapsed time = 5935 ms. // CPU time = 875 ms,  elapsed time = 5638 ms. //    CPU time = 797 ms,  elapsed time = 5416 ms.
+FROM envio
+WHERE fecha_registro BETWEEN '2018-01-01' AND '2025-01-01';
 
 -- 4) Borrar el índice creado
-
 DROP INDEX IX_fecha_registro
 ON envio_2;
 
@@ -141,102 +149,97 @@ ON envio_2;
 -- columnas seleccionadas y repetir la consulta anterior. 
 -- Registrar el plan de ejecución utilizado por el motor y los tiempos de respuesta.
 
--- OPCION 1: Indice agrupado con las columnas definidas.
-CREATE CLUSTERED INDEX I_fecha_registro
-ON envio_2 (fecha_registro, id_paquete, id_ruta);
-
-SET STATISTICS TIME ON;
-SET STATISTICS IO ON;
-
 --Plan "Clustered Index Seek"
--- Consulta 1: rango amplio
-SELECT fecha_registro, id_paquete, id_ruta
+-- OPCION 1: Indice agrupado con las columnas definidas.
+CREATE CLUSTERED INDEX IX_envio_fecha_estado_ruta
+ON envio_2 ( fecha_registro, id_estado_actual, id_ruta);
+
+--Consulta 1
+SELECT fecha_registro, id_estado_actual, id_ruta
 FROM envio_2
-WHERE fecha_registro BETWEEN '2020-01-01' AND '2024-01-01';
---Columnas devueltas: 800.608 / Tiempos (3 intentos):  CPU time = 578 ms,  elapsed time = 5374 ms.//     CPU time = 594 ms,  elapsed time = 5987 ms. //    CPU time = 640 ms,  elapsed time = 5087 ms.
+WHERE fecha_registro BETWEEN '2023-01-01' AND '2025-01-01';
 
--- Consulta 2: rango medio
-SELECT fecha_registro, id_paquete, id_ruta
+--Resultados de la consulta:
+--Columnas devueltas: 200.040 // Tiempos (3 intentos): CPU time = 171 ms,  elapsed time = 1418 ms. /  CPU time = 188 ms,  elapsed time = 1371 ms. /  CPU time = 203 ms,  elapsed time = 1153 ms.
+--Lecturas logicas obtenidas: Table 'envio_2'. Scan count 1, logical reads 1019
+
+--Consulta 2
+SELECT fecha_registro, id_ruta, id_estado_actual
 FROM envio_2
-WHERE fecha_registro BETWEEN '2022-01-01' AND '2023-01-01';
--- Columnas devueltas: 201.152 // Tiempos (3 intentos):  CPU time = 172 ms,  elapsed time = 1191 ms. //    CPU time = 281 ms,  elapsed time = 1202 ms. //  CPU time = 157 ms,  elapsed time = 1185 ms.
+WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-12-31' AND id_ruta = 7;
 
--- Consulta 3: rango estrecho
-SELECT fecha_registro, id_paquete, id_ruta
-FROM envio_2
-WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-06-01';
---Columnas devueltas: 84.135 // Tiempos (3 intentos):    CPU time = 62 ms,  elapsed time = 490 ms. //    CPU time = 78 ms,  elapsed time = 539 ms. //   CPU time = 47 ms,  elapsed time = 508 ms.
+--Resultados de la consulta:
+--Columnas devueltas: 4.993 // Tiempos (3 intentos):  CPU time = 16 ms,  elapsed time = 105 ms. /   CPU time = 31 ms,  elapsed time = 82 ms. /  CPU time = 15 ms,  elapsed time = 86 ms.
+--Lecturas logicas obtenidas:Table 'envio_2'. Scan count 1, logical reads 510
 
---Consulta 4: 
-SELECT fecha_registro, id_paquete, id_ruta
-FROM envio
-WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-06-01'
-  AND id_paquete = 3;
---Columnas devueltas; 21.202 // Tiempos (3 intentos):  CPU time = 250 ms,  elapsed time = 354 ms. // CPU time = 250 ms,  elapsed time = 332 ms.
+--Consulta 3
+SELECT e.fecha_registro, es.nombre_estado, e.id_ruta
+FROM envio_2 AS e
+INNER JOIN estado_envio AS es ON e.id_estado_actual = es.id_estado
+WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_actual IN (5, 6) AND id_ruta = 7 ;  
 
---Consulta 5:
-SELECT fecha_registro, id_paquete, id_ruta
-FROM envio
-WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-06-01'
-  AND id_paquete = 3
-  AND id_ruta = 3;
---Columnas devueltas: 4.303 // Tiempos (3 intentos): CPU time = 266 ms,  elapsed time = 343 ms. // CPU time = 218 ms,  elapsed time = 292 ms.
+--Resultados de la consulta:
+--Consultas devueltas: 3329 // Tiempos (3 intentos): CPU time = 47 ms,  elapsed time = 136 ms. / CPU time = 31 ms,  elapsed time = 132 ms. / CPU time = 62 ms,  elapsed time = 142 ms.
+--Lecturas logicas obtenidas: Table 'envio_2'. Scan count 1, logical reads 1019
 
-SET STATISTICS TIME OFF;
-SET STATISTICS IO OFF;
 
---DROP INDEX I_fecha_registro ON envio_2;
+--Ejecutamos el siguiente codigo en el caso de querer eliminar el indice agrupado
+--DROP INDEX  IX_envio_fecha_estado_ruta ON envio_2;
 
+--Plan de ejecucion "Index Seek (NonClustered)"
 --OPCION 2: Indice no agrupado con INCLUDE para las columnas
-CREATE NONCLUSTERED INDEX IX_fecha_registro
+CREATE NONCLUSTERED INDEX IX_fecha_registro_estado_ruta
 ON envio (fecha_registro)
-INCLUDE (id_paquete, id_ruta);
+INCLUDE (id_estado_actual, id_ruta);
 
---Primero realizamos una consulta para verificar que no exista ningun indice no acumulado creado.
-SELECT fecha_registro, id_paquete, id_ruta
+--Consulta 1:
+SELECT fecha_registro, id_estado_actual, id_ruta
 FROM envio
-WHERE fecha_registro BETWEEN '2020-01-01' AND '2024-01-01';
--- Plan Clustered Index Scan, por lo visto está utilizando el indice acumulado generado de forma automatica "PK_envio" pero este no es eficiente
---ya que realiza un escaneo completo de la tabla para encontrar el resultado deseado.
+WHERE fecha_registro BETWEEN '2023-01-01' AND '2025-01-01';
 
---Plan "Index Seek (NonClustered)"
+--Resultados de la consulta:
+--Columnas devueltas: 200040 / Tiempos (3 intentos):  CPU time = 47 ms,  elapsed time = 1206 ms. /   CPU time = 203 ms,  elapsed time = 1073 ms. / CPU time = 0 ms,  elapsed time = 1257 ms.
+--Lecturas logicas obtenidas: Table 'envio'. Scan count 1, logical reads 525
 
--- Consulta 1: rango amplio
-SELECT fecha_registro, id_paquete, id_ruta
-FROM envio_2
-WHERE fecha_registro BETWEEN '2020-01-01' AND '2024-01-01';
---Columnas devueltas: 800.608 // Tiempos (3 intentos): CPU time = 672 ms,  elapsed time = 4730 ms. //    CPU time = 781 ms,  elapsed time = 4795 ms. //  CPU time = 500 ms,  elapsed time = 4351 ms.
-
--- Consulta 2: rango medio
-SELECT fecha_registro, id_paquete, id_ruta
-FROM envio_2
-WHERE fecha_registro BETWEEN '2022-01-01' AND '2023-01-01';
---Columnas devueltas: 201.152 // Tiempos (3 intentos):  CPU time = 281 ms,  elapsed time = 1172 ms. //  CPU time = 156 ms,  elapsed time = 1172 ms. //  CPU time = 296 ms,  elapsed time = 1102 ms.
-
--- Consulta 3: rango estrecho
-SELECT fecha_registro, id_paquete, id_ruta
-FROM envio_2
-WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-06-01';
---Columnas devueltas: 84.135 // Tiempos (3 intentos):  CPU time = 62 ms,  elapsed time = 515 ms. //  CPU time = 31 ms,  elapsed time = 518 ms. // CPU time = 63 ms,  elapsed time = 492 ms.
-
---Consulta 4
-SELECT fecha_registro, id_paquete, id_ruta
+--Consulta 2
+SELECT fecha_registro, id_ruta, id_estado_actual
 FROM envio
-WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-06-01'
-  AND id_paquete = 3;
---Columnas devueltas: 21.202 // Tiempos (3 intentos):    CPU time = 16 ms,  elapsed time = 243 ms. //  CPU time = 31 ms,  elapsed time = 194 ms. // CPU time = 63 ms,  elapsed time = 243 ms.
+WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-12-31' AND id_ruta = 7;
 
---Consulta 5
-SELECT fecha_registro, id_paquete, id_ruta
-FROM envio
-WHERE fecha_registro BETWEEN '2024-01-01' AND '2024-06-01'
-  AND id_paquete = 3
-  AND id_ruta = 3;
---Columnas devueltas: 4.303 // Tiempos (3 intentos):  CPU time = 47 ms,  elapsed time = 119 ms. //  CPU time = 31 ms,  elapsed time = 115 ms. //  CPU time = 47 ms,  elapsed time = 110 ms.
+--Resultados de la consulta:
+--Columnas devueltas: 4.993 // Tiempos (3 intentos): CPU time = 0 ms,  elapsed time = 72 ms./ CPU time = 15 ms,  elapsed time = 79 ms./  CPU time = 0 ms,  elapsed time = 82 ms.
+--Lecturas logicas obtenidas: Table 'envio'. Scan count 1, logical reads 264
+
+--Consulta 3
+SELECT e.fecha_registro, es.nombre_estado, e.id_ruta
+FROM envio AS e
+INNER JOIN estado_envio AS es ON e.id_estado_actual = es.id_estado
+WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_actual IN (5, 6) AND id_ruta = 7 ; 
+
+--Resultados de la consulta:
+--Columnas devueltas: 3329 // Tiempos (3 intentos): CPU time = 63 ms,  elapsed time = 118 ms. /   CPU time = 32 ms,  elapsed time = 139 ms. /   CPU time = 47 ms,  elapsed time = 139 ms.
+--Lecturas logicas obtenidas: Table 'envio'. Scan count 1, logical reads 525
 
  --En caso de querer eliminar el indice (NO acumulado), ejecutamos el siguiente codigo.
--- DROP INDEX IX_fecha_registro ON envio;
+-- DROP INDEX IX_fecha_registro_estado_ruta ON envio;
 
 --Nota: Estas pruebas de índices acumulados e índices NO acumulados fueron basicas, sin embargo los resultados muestran que el uso de
 --los mismos mejora notablemente el rendimiento de las consultas. Los índices agrupados optimizan busquedas por rangos amplios, mientras que los no agrupados con columnas incluidas son mas eficientes en consultas especificas.
 --En ambos casos, se reducen los tiempos de respuesta y el uso de recursos al evitar escaneos completos de la tabla.
+
+--Tabla resumen
+-- | Escenario (Indice aplicado)                                                               | Plan de ejecucion          | Consulta                                      | Logical Reads | CPU Time aprox  | Elapsed Time aprox. | Filas devueltas  
+-- | 1. Sin índice (envio_2)                                                                   | Table Scan                 | Consulta por período (2018–2025)              | 4465          |  563 ms         |  4561 ms            | 699,666          
+-- | 2. PK por defecto (Clustered por id_envio)                                                | Clustered Index Scan       | Consulta por período (2018–2025)              | 4483          |  875 ms         |  4548 ms            | 699,666          
+-- | 3. Índice agrupado por fecha (fecha_registro)                                             | Clustered Index Seek       | Consulta por período (2018–2025)              | 3815          |  719 ms         |  4530 ms            | 699,666         
+-- | 4. Índice agrupado compuesto (fecha_registro, id_estado_actual, id_ruta)                  | Clustered Index Seek       | Consulta columnas 1: Rango 2023–2025          | 1019          |  171–200 ms     | 1153–1400 ms        | 200,040          
+-- |                                                                                           |                            | Consulta columnas 2: Rango + ruta=7           | 510           |  15–30 ms       | 80–105 ms           | 4,993            
+-- |                                                                                           |                            | Consulta columnas 3: JOIN + filtros           | 1019          |  31–60 ms       | 130–142 ms          | 3,329            
+-- | 5. Índice no agrupado con INCLUDE (fecha_registro INCLUDE estado, ruta)                   | Nonclustered Seek          | Consulta columnas 1: Rango 2023–2025          | 525           |  0–200 ms       | 1073–1250 ms        | 200,040          
+-- |                                                                                           |                            | Consulta columnas 2: Rango + ruta=7           | 264           |  0–15 ms        | 72–82 ms            | 4,993            
+-- |                                                                                           |                            | Consulta columnas 3: JOIN + filtros           | 525           |  30–60 ms       | 118–139 ms          | 3,329            
+
+
+
+
+
