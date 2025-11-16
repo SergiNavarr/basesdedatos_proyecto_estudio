@@ -98,18 +98,17 @@ FULL (permite backup en línea y restauración punto en el tiempo mediante archi
 
 #### 1. Backup completo (FULL)
 - **Frecuencia:** Diario, a las **00:00 h**.  
-- **Ubicación:** `C:\Backups\PaqueExpress_FULL_<fecha>.bak`  
+- **Ubicación:** `C:\Backups\PaqueExpress_FULL.bak`  
 - **Retención:** 7 días.  
 - **Propósito:** Generar un punto base para restauraciones completas.
 
 #### 2. Backup del log de transacciones (LOG)
 - **Frecuencia:** Cada **30 minutos** en horario operativo.  
-- **Archivos:** `PaqueExpress_LOG_<HHMM>.trn`  
+- **Archivos:** `PaqueExpress_LOG.trn`  
 - **Retención:** 24–48 horas.  
 - **Propósito:** Permitir restauración casi exacta al momento del fallo.
 
 #### Verificación y mantenimiento
-- Validar integridad de los respaldos mediante `RESTORE VERIFYONLY`.  
 - Registrar horarios y resultados de cada ejecución.  
 - Supervisar espacio disponible en la carpeta de backups.  
 - Mantener las copias en un repositorio seguro dentro de la organización.
