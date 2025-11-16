@@ -23,9 +23,24 @@ decir, los datos se almacenan en el disco en el mismo orden en que están organi
 estar almacenadas físicamente de una forma. Cuando una tabla tiene un índice clúster, la tabla
 se denomina tabla agrupada.
 
+**Sintaxis de Creación de un Índice Agrupado:**
+
+```sql
+CREATE CLUSTERED INDEX IX_NombreIndice
+ON NombreTabla (Columna1 [ASC|DESC], Columna2 [ASC|DESC]);
+```
+
 **Índice no Agrupado:** Los índices no agrupados mantienen una estructura separada que
 contiene las claves del índice y punteros a las ubicaciones físicas de los datos. Al no alterar el
 orden físico de la tabla, una tabla puede contener múltiples índices no agrupados.
+
+**Sintaxis de Creación de un Índice No Agrupado:**
+
+```sql
+CREATE NONCLUSTERED INDEX IX_NombreIndice
+ON NombreTabla (Columna1 [ASC|DESC])
+INCLUDE (Columna2, Columna3);
+```
 
 ### ¿Qué es una Página de Datos?
 
