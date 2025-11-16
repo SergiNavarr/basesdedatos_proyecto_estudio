@@ -88,33 +88,33 @@ Esta característica es especialmente valiosa en bases de datos de **gran tamañ
 
 ### **4. Política de Backup para el sistema PaqueExpress**
 
-## Objetivo
+#### Objetivo
 Garantizar la integridad, disponibilidad y recuperación de la información del sistema de envíos *PaqueExpress*, permitiendo restaurar el servicio ante fallos con mínima pérdida de datos.
 
-## Modelo de recuperación
+#### Modelo de recuperación
 FULL (permite backup en línea y restauración punto en el tiempo mediante archivos de log).
 
-## Tipos de respaldo
+#### Tipos de respaldo
 
-### 1. Backup completo (FULL)
+#### 1. Backup completo (FULL)
 - **Frecuencia:** Diario, a las **00:00 h**.  
 - **Ubicación:** `C:\Backups\PaqueExpress_FULL_<fecha>.bak`  
 - **Retención:** 7 días.  
 - **Propósito:** Generar un punto base para restauraciones completas.
 
-### 2. Backup del log de transacciones (LOG)
+#### 2. Backup del log de transacciones (LOG)
 - **Frecuencia:** Cada **30 minutos** en horario operativo.  
 - **Archivos:** `PaqueExpress_LOG_<HHMM>.trn`  
 - **Retención:** 24–48 horas.  
 - **Propósito:** Permitir restauración casi exacta al momento del fallo.
 
-## Verificación y mantenimiento
+#### Verificación y mantenimiento
 - Validar integridad de los respaldos mediante `RESTORE VERIFYONLY`.  
 - Registrar horarios y resultados de cada ejecución.  
 - Supervisar espacio disponible en la carpeta de backups.  
 - Mantener las copias en un repositorio seguro dentro de la organización.
 
-## Procedimiento ante fallos
+#### Procedimiento ante fallos
 1. Restaurar el último **backup FULL** usando `NORECOVERY`.  
 2. Aplicar los backups **LOG** en orden cronológico.  
 3. Finalizar con `RECOVERY` para habilitar la base.  
