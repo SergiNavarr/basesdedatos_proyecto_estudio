@@ -63,16 +63,16 @@ CREATE OR ALTER PROCEDURE dbo.sp_InsertCliente
 AS
 BEGIN
     SET NOCOUNT ON;
+
     BEGIN TRY
-        INSERT INTO dbo.cliente (nombre, apellido, dni, email, id_direccion)
+        INSERT INTO cliente (nombre, apellido, dni, email, id_direccion)
         VALUES (@Nombre, @Apellido, @DNI, @Email, @IdDireccion);
 
         SET @NewId = SCOPE_IDENTITY();
     END TRY
     BEGIN CATCH
-        -- retorna un codigo de error simple
-        RAISERROR('Error inserting cliente: %s', 16, 1, ERROR_MESSAGE());
         SET @NewId = -1;
+        THROW;
     END CATCH
 END
 GO
@@ -89,10 +89,10 @@ CREATE OR ALTER PROCEDURE dbo.sp_UpdateCliente
 AS
 BEGIN
     SET NOCOUNT ON;
+
     BEGIN TRY
-        UPDATE dbo.cliente
-        SET
-            nombre = COALESCE(@Nombre, nombre),
+        UPDATE cliente
+        SET nombre = COALESCE(@Nombre, nombre),
             apellido = COALESCE(@Apellido, apellido),
             dni = COALESCE(@DNI, dni),
             email = COALESCE(@Email, email),
@@ -100,36 +100,12 @@ BEGIN
         WHERE id_cliente = @IdCliente;
     END TRY
     BEGIN CATCH
-        RAISERROR('Error updating cliente: %s', 16, 1, ERROR_MESSAGE());
+        THROW;
     END CATCH
 END
 GO
 ```
-### 4.3. sp_DeleteCliente — borrar cliente (borrado lógico recomendado)
--- Si se prefiere un borrado físico:
-```sql
-CREATE OR ALTER PROCEDURE dbo.sp_DeleteCliente
-    @IdCliente INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRY
-        -- ejemplo: chequeo de integridad antes de borrar
-        IF EXISTS (SELECT 1 FROM dbo.paquete WHERE id_cliente_origen = @IdCliente OR id_cliente_destino = @IdCliente)
-        BEGIN
-            RAISERROR('No se puede eliminar: el cliente tiene paquetes relacionados.', 16, 1);
-            RETURN;
-        END
-
-        DELETE FROM dbo.cliente WHERE id_cliente = @IdCliente;
-    END TRY
-    BEGIN CATCH
-        RAISERROR('Error deleting cliente: %s', 16, 1, ERROR_MESSAGE());
-    END CATCH
-END
-GO
-```
-### 4.4. SP para paquete (insert)
+### 4.3. SP para paquete (insert)
 ```sql
 CREATE OR ALTER PROCEDURE dbo.sp_InsertPaquete
     @Peso DECIMAL(10,2),
@@ -142,20 +118,23 @@ CREATE OR ALTER PROCEDURE dbo.sp_InsertPaquete
 AS
 BEGIN
     SET NOCOUNT ON;
+
     BEGIN TRY
-        INSERT INTO dbo.paquete (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
-        VALUES (@Peso, @Dimensiones, @ValorDeclarado, @IdTipoPaquete, @IdClienteOrigen, @IdClienteDestino);
+        INSERT INTO paquete
+            (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
+        VALUES
+            (@Peso, @Dimensiones, @ValorDeclarado, @IdTipoPaquete, @IdClienteOrigen, @IdClienteDestino);
 
         SET @NewId = SCOPE_IDENTITY();
     END TRY
     BEGIN CATCH
-        RAISERROR('Error inserting paquete: %s', 16, 1, ERROR_MESSAGE());
         SET @NewId = -1;
+        THROW;
     END CATCH
 END
 GO
 ```
-### 4.5. SP para envio (insert con transacción simple)
+### 4.4. SP para envio (insert con transacción simple)
 ```sql
 CREATE OR ALTER PROCEDURE dbo.sp_InsertEnvio
     @IdPaquete INT,
@@ -168,26 +147,26 @@ CREATE OR ALTER PROCEDURE dbo.sp_InsertEnvio
 AS
 BEGIN
     SET NOCOUNT ON;
+
     BEGIN TRY
-        IF @FechaRegistro IS NULL SET @FechaRegistro = CONVERT(date, GETDATE());
+        IF @FechaRegistro IS NULL SET @FechaRegistro = GETDATE();
 
         BEGIN TRANSACTION;
 
-        INSERT INTO dbo.envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
+        INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
         VALUES (@FechaRegistro, @IdPaquete, @IdRuta, @IdVehiculo, @IdEmpleadoResponsable, @IdEstadoActual);
 
         SET @NewId = SCOPE_IDENTITY();
 
-        -- opcional: insertar primer registro en historial_envio
-        INSERT INTO dbo.historial_envio (id_envio, fecha_hora, id_estado, observaciones)
-        VALUES (@NewId, GETDATE(), @IdEstadoActual, 'Registro inicial por sp_InsertEnvio');
+        INSERT INTO historial_envio (id_envio, fecha_hora, id_estado, observaciones)
+        VALUES (@NewId, GETDATE(), @IdEstadoActual, 'Registro inicial');
 
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         ROLLBACK TRANSACTION;
-        RAISERROR('Error inserting envio: %s', 16, 1, ERROR_MESSAGE());
         SET @NewId = -1;
+        THROW;
     END CATCH
 END
 GO
@@ -202,17 +181,14 @@ CREATE OR ALTER FUNCTION dbo.fn_TiempoContratacion(@IdEmpleado INT)
 RETURNS INT
 AS
 BEGIN
-    DECLARE @FechaContr DATE;
+    DECLARE @Fecha DATE;
+    SELECT @Fecha = fecha_contratacion FROM empleado WHERE id_empleado=@IdEmpleado;
 
-    SELECT @FechaContr = fecha_contratacion
-    FROM dbo.empleado
-    WHERE id_empleado = @IdEmpleado;
+    IF @Fecha IS NULL RETURN NULL;
 
-    IF @FechaContr IS NULL RETURN NULL;
-
-    -- cálculo de años completos transcurridos
-    RETURN DATEDIFF(YEAR, @FechaContr, GETDATE())
-           - CASE WHEN DATEADD(YEAR, DATEDIFF(YEAR, @FechaContr, GETDATE()), @FechaContr) > GETDATE() THEN 1 ELSE 0 END;
+    RETURN DATEDIFF(YEAR,@Fecha,GETDATE()) -
+           CASE WHEN DATEADD(YEAR,DATEDIFF(YEAR,@Fecha,GETDATE()),@Fecha) > GETDATE()
+                THEN 1 ELSE 0 END;
 END
 GO
 ```
@@ -241,12 +217,10 @@ CREATE OR ALTER FUNCTION dbo.fn_PesoVolumetrico
 RETURNS DECIMAL(10,2)
 AS
 BEGIN
-    -- Validación básica: si algún valor es NULL, no puede calcularse el peso volumétrico
     IF @AltoCM IS NULL OR @AnchoCM IS NULL OR @LargoCM IS NULL
         RETURN NULL;
 
-    -- Devuelve el peso volumétrico redondeado a 2 decimales
-    RETURN ROUND((@AltoCM * @AnchoCM * @LargoCM) / 5000, 2);
+    RETURN ROUND((@AltoCM * @AnchoCM * @LargoCM) / 5000,2);
 END
 GO
 ```
@@ -257,12 +231,11 @@ Calcula el peso volumétrico (en kg) de un paquete segun la formula estandar uti
 
 ```sql
 CREATE OR ALTER FUNCTION dbo.fn_PaqueteEsAltoRiesgo(@ValorDeclarado DECIMAL(10,2))
-RETURNS BIT
+RETURNS VARCHAR(2)
 AS
 BEGIN
-    -- umbral configurable; por ejemplo, > 100000
     IF @ValorDeclarado IS NULL RETURN 0;
-    RETURN CASE WHEN @ValorDeclarado >= 100000 THEN 1 ELSE 0 END;
+    RETURN CASE WHEN @ValorDeclarado >= 100000 THEN 'Si' ELSE 'NO' END;
 END
 GO
 ```
