@@ -232,11 +232,68 @@ operaciones de escritura (INSERT, UPDATE, DELETE) deben actualizar también las
 estructuras de índice asociadas. Esto puede generar fragmentación interna, afectando el
 rendimiento de lectura si no se gestiona adecuadamente.
 
----
 
 ## TEMA 3:  Manejo de transacciones y transacciones anidadas
 
----
+Las transacciones en SQL Server son un componente fundamental para garantizar la integridad, coherencia y confiabilidad de la información en bases de datos. Esto es especialmente importante en sistemas donde múltiples instrucciones deben ejecutarse como un proceso único, evitando resultados parciales o inconsistentes ante cualquier falla.
+
+## ¿Qué son las Transacciones?
+
+Una transacción es una unidad lógica de trabajo que agrupa una o varias operaciones. Su propósito es asegurar que todas esas operaciones se ejecuten completamente o, en caso contrario, ninguna de ellas se aplique. Este comportamiento evita que la base de datos quede en un estado incorrecto si surge algún problema durante la ejecución.
+
+Para manejar el funcionamiento de una transacción, SQL Server utiliza tres instrucciones esenciales:
+
+- **Begin Transaction**: marca el inicio de la transacción.
+- **Commit**: confirma y guarda de forma permanente los cambios realizados.
+- **Rollback**: revierte todos los cambios que se hayan efectuado desde el inicio de la transacción si ocurre un error.
+
+Este mecanismo se basa en las propiedades ACID, las cuales garantizan atomicidad, consistencia, aislamiento y durabilidad. Gracias a esto, la base de datos mantiene su fiabilidad incluso en situaciones inesperadas como interrupciones de red, errores de programación o fallas del servidor.
+
+
+## ¿Qué son las Transacciones Anidadas?
+
+Las transacciones anidadas son transacciones declaradas dentro de otra transacción ya existente. Aunque el desarrollador pueda iniciar múltiples transacciones dentro de una misma operación, SQL Server considera que solo la transacción más externa es la que determina el resultado final.
+
+Esto implica que:
+
+- Una transacción interna puede “completarse”, pero sus cambios no se almacenan de forma definitiva.
+- La confirmación real ocurre recién cuando la transacción principal ejecuta una confirmación global.
+- Si la transacción principal decide revertir los cambios, todas las operaciones internas también se revierten, aunque alguna de ellas haya sido “confirmada” individualmente.
+
+Las transacciones anidadas son útiles cuando se quiere estructurar la lógica en múltiples bloques, pero sin perder control centralizado sobre el resultado final.
+
+
+## ¿Qué es un Savepoint?
+
+Un savepoint funciona como un punto de guardado dentro de una transacción. Es una marca que permite deshacer una parte específica de la transacción sin tener que revertirla completa.
+
+En otras palabras:
+
+- Permite cancelar solo una sección del proceso.
+- Mantiene intactos los cambios anteriores al punto de guardado.
+- Evita reiniciar operaciones costosas por culpa de un error localizado.
+
+Este mecanismo resulta conveniente cuando algunos pasos son secundarios o no esenciales para completar el proceso principal. Si ocurre un fallo en esa área opcional, no es necesario cancelar toda la transacción. En su lugar, basta con volver al savepoint y continuar desde allí.
+
+
+## Importancia y Ventajas
+
+El uso de transacciones es esencial cuando:
+
+- Un conjunto de operaciones depende de que todas sean correctas.
+- Es necesario evitar datos incompletos o contradictorios.
+- Existen relaciones entre tablas que no pueden quedar en estado inconsistente.
+- Se requiere confiabilidad absoluta ante fallas.
+
+Las transacciones anidadas y los savepoints resultan útiles cuando:
+
+- Se gestionan procesos complejos con múltiples pasos internos.
+- Solo una parte del proceso puede fallar sin invalidar todo lo anterior.
+- Un error secundario no debe impedir que el proceso principal finalice correctamente.
+- Se busca mejorar el control y la flexibilidad del manejo de errores.
+
+Por ejemplo, en una aplicación logística, el cambio de estado de un envío es más importante que registrar un mensaje descriptivo de ese cambio. Si la anotación del historial fallara, el sistema podría conservar el estado actualizado y descartar solo el registro complementario, evitando repetir todo el proceso desde el principio.
+
 
 ## TEMA 4:  Backup y restore. Backup en línea
 
@@ -878,7 +935,100 @@ Ambos indices, al incluir todas las columnas claves de las consultas (fecha, est
 
 ## TEMA 3:  Manejo de transacciones y transacciones anidadas
 
----
+Iniciamos verificando la cantidad de registros en las tablas seleccionadas para nuestra transacción, en este caso ruta y envío
+![Estado_inicial_tablas_ruta_y_envio](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_inical_tablas_ruta_y_envio.png)
+
+Declaramos la transacción
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    -- 1) Insertar nueva ruta
+    INSERT INTO ruta (descripcion, id_sucursal_origen, id_sucursal_destino, distancia_km, tiempo_estimado)
+    VALUES ('Ruta 10 a 2', 10, 2, 10.5, 25);
+
+    DECLARE @idRuta INT = SCOPE_IDENTITY();
+
+    -- 2) Insertar nuevo envío usando esa ruta
+    INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
+    VALUES (GETDATE(), 1, @idRuta, 1, 5, 1);
+
+    DECLARE @idEnvio INT = SCOPE_IDENTITY();
+
+    -- 3) Actualizar estado del envío
+    UPDATE envio
+    SET id_estado_actual = 2
+    WHERE id_envio = @idEnvio;
+
+    COMMIT;
+    PRINT 'Transacción completada correctamente.';
+
+END TRY
+BEGIN CATCH
+    ROLLBACK;
+    PRINT 'Se revertieron todos los cambios.';
+    PRINT ERROR_MESSAGE();
+END CATCH;
+```
+Podemos ver que en la salida de la consulta se ven las filas afectadas correctamente
+![Salida_transaccion_correcta](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/salida_transaccion_correcta.png)
+
+Luego volvemos a verificar la cantidad de registros en las tablas correspondientes
+![Estado_tablas_ruta_y_envio_post_transaccion](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_tablas_ruta_y_envio_post_transaccion_correcta.png)
+
+Ahora pasamos a modificar el script de la transacción agregando un error intencional para observar el funcionamieto del rollback
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    -- 1) Insertar nueva ruta
+    INSERT INTO ruta (descripcion, id_sucursal_origen, id_sucursal_destino, distancia_km, tiempo_estimado)
+    VALUES ('Ruta 10 a 3', 10, 3, 10.5, 25);
+
+    DECLARE @idRuta2 INT = SCOPE_IDENTITY();
+
+    -- 2) ERROR INTENCIONAL: Insertar envío con vehículo inexistente
+    INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
+    VALUES (GETDATE(), 1, @idRuta2, 9999, 5, 1);
+    --                       vehículo inválido provoca error FK
+
+    DECLARE @idEnvio2 INT = SCOPE_IDENTITY();
+
+    -- 3) Actualizar envío (nunca se ejecuta porque ya falló antes)
+    UPDATE envio
+    SET id_estado_actual = 2
+    WHERE id_envio = @idEnvio2;
+
+    COMMIT;
+    PRINT 'Todo se guardó correctamente.';
+
+END TRY
+BEGIN CATCH
+    ROLLBACK;
+    PRINT 'Error detectado: Se ejecutó ROLLBACK.';
+    PRINT ERROR_MESSAGE();
+END CATCH;
+```
+
+Ejecutamos el script y vemos la salida correspondiente al Rollback
+
+![Salida_transaccion_incorrecta](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/salida_transaccion_incorrecta.png)
+
+Conclusiones:
+Durante las pruebas se implementó una transacción que incluía tres operaciones secuenciales: 
+inserción de una ruta, inserción de un envío relacionado y actualización del estado de ese envío. 
+Cuando todas las operaciones se realizaron correctamente, la transacción llegó al COMMIT y los cambios quedaron
+guardados de forma permanente, cumpliendo el objetivo de atomicidad.
+
+Luego se repitió la prueba provocando un error intencional al intentar insertar un envío con un valor inválido
+en una clave foránea (vehículo inexistente). SQL Server detectó el error y ejecutó el bloque CATCH, 
+realizando un ROLLBACK. Como resultado, ninguna de las operaciones dentro de la transacción quedó registrada
+en la base de datos: ni la ruta, ni el envío, ni la actualización.
+
+Esto demuestra que la transacción garantiza la integridad y consistencia del modelo relacional. 
+Los datos solo se guardan si todas las operaciones se ejecutan correctamente. 
+Si ocurre cualquier fallo en una parte del proceso, el sistema revierte todo automáticamente y evita la existencia
+de registros incompletos o huérfanos.
 
 ## TEMA 4:  Backup y restore. Backup en línea
 Iniciamos verificando la cantidad de registros en tablas al azar, por ejemplo Paquete y Envio
@@ -1100,6 +1250,9 @@ El uso de procedimientos y funciones almacenadas en SQL Server permite encapsula
 Al comparar escenarios sin índice, con índice simple por fecha y con índices más especializados (agrupado compuesto y no agrupado con INCLUDE), se evidenció que la presencia o ausencia de índices modifica por completo la estrategia de búsqueda del motor y, en consecuencia, los tiempos de respuesta y la cantidad de lecturas lógicas. Los resultados mostraron que los índices —ya sean agrupados o no agrupados— son herramientas fundamentales para mejorar la eficiencia en consultas y reducir lecturas innecesarias. También comprendimos que su diseño no debe ser arbitrario, un índice mal definido puede perjudicar el rendimiento general del sistema. La experiencia permitió comprender la importancia de identificar correctamente qué columnas deben ser indexadas, según los patrones reales de consulta, ademas de mantener estas estructuras de manera adecuada.
 
 #### Manejo de transacciones y transacciones anidadas
+Las transacciones permiten que varias operaciones trabajen de manera unificada, protegiendo la integridad de los datos. Las transacciones anidadas y los savepoints amplían este control, ofreciendo mecanismos para recuperar parcialmente el proceso sin perder la operación completa.
+
+Su implementación adecuada evita inconsistencias, garantiza confiabilidad y mejora la robustez de cualquier aplicación que dependa de bases de datos transaccionales, especialmente en sistemas críticos donde la precisión de los datos es indispensable.
 
 #### Backup y restore. Backup en línea
 La implementación de una política de backup y restore en el sistema de envíos PaqueExpress mostró lo importante que es contar con mecanismos confiables para proteger y recuperar datos en una base de datos transaccional. Gracias al modelo de recuperación FULL, junto con respaldos completos y logs de transacciones, se pudo asegurar la trazabilidad, integridad y disponibilidad de la información incluso frente a un de fallo total del sistema.
@@ -1128,3 +1281,12 @@ A. Silberschatz, H. F. Korth, y S. Sudarshan, Fundamentos de Bases de Datos, 4ta
 Microsoft Learn, “Backup overview (SQL Server)” [Online]. Available: https://learn.microsoft.com/en-us/sql/relational-databases/backup-restore/backup-overview-sql-server?view=sql-server-ver17.
 
 J. Gavin, “Restore database SQL Server options and examples” MSSQLTips, [Online]. Available: https://www.mssqltips.com/sqlservertip/6893/restore-database-sql-server-options-examples/.
+
+Microsoft Docs, Transactions (Transact-SQL), 2024.
+[Online]. Available: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/transactions-transact-sql
+
+Microsoft Docs, TRY...CATCH (Transact-SQL), 2024.
+[Online]. Available: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/try-catch-transact-sql
+
+Microsoft Docs, SAVE TRANSACTION (savepoints), 2024.
+[Online]. Available: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/save-transaction-transact-sql
