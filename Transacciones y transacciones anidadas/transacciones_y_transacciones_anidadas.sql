@@ -16,7 +16,7 @@ BEGIN TRY
 
     -- 1) Insertar nueva ruta
     INSERT INTO ruta (descripcion, id_sucursal_origen, id_sucursal_destino, distancia_km, tiempo_estimado)
-    VALUES ('Ruta 10 a 2', 10, 2, 10.5, '00:25:00');
+    VALUES ('Ruta 10 a 2', 10, 2, 10.5, 25);
 
     DECLARE @idRuta INT = SCOPE_IDENTITY();
 
@@ -48,7 +48,7 @@ BEGIN TRY
 
     -- 1) Insertar nueva ruta
     INSERT INTO ruta (descripcion, id_sucursal_origen, id_sucursal_destino, distancia_km, tiempo_estimado)
-    VALUES ('Ruta 10 a 3', 10, 3, 10.5, '00:25:00');
+    VALUES ('Ruta 10 a 3', 10, 3, 10.5, 25);
 
     DECLARE @idRuta2 INT = SCOPE_IDENTITY();
 
