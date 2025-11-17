@@ -253,8 +253,6 @@ Un **backup** es una copia de seguridad de los datos tomada en un punto específ
 - **Backup de Archivos o Grupos de Archivos (File / Filegroup Backup)**  
   Permite realizar respaldos parciales de archivos o grupos de archivos específicos dentro de la base de datos. Esta modalidad posibilita **restauraciones parciales o en línea** sin necesidad de dejar toda la base de datos fuera de servicio.
 
----
-
 #### **Modelos de Recuperación**
 
 El modelo de recuperación determina cómo SQL Server gestiona el log de transacciones y qué opciones de respaldo y restauración están disponibles.
@@ -267,8 +265,6 @@ El modelo de recuperación determina cómo SQL Server gestiona el log de transac
 
 - **Bulk-Logged**  
   Similar al modelo *Full*, pero reduce el registro de transacciones en operaciones masivas (*bulk operations*), mejorando el rendimiento. No permite recuperación punto en el tiempo si una operación masiva ocurre entre respaldos de log.
-
----
 
 ### **2. Restore**
 
@@ -295,7 +291,6 @@ RESTORE LOG MiBase
 FROM DISK = 'C:\Backups\MiBase_LOG.trn'
 WITH RECOVERY;
 ```
----
 
 ### **3. Backup en Línea**
 
@@ -573,7 +568,7 @@ SELECT dbo.fn_PaqueteEsAltoRiesgo(150000) AS EsAltoRiesgo;
 
 ## Tema 2: Optimización de Consultas a traves de Índices
 
-## 1. Eleccion de tabla e Insercion de datos
+### 1. Eleccion de tabla e Insercion de datos
 
 La tabla que vamos a utilizar en esta ocasion es la tabla envio debido a que dentro del sistema de paquetería, es una de las más consultadas y con mayor crecimiento de registros. Sobre ella se realizan búsquedas frecuentes por fecha, estado, ruta y empleado.
 
@@ -628,7 +623,7 @@ END;
 SET NOCOUNT OFF;
 ```
 
-## 2. Creación de tabla sin índices
+### 2. Creación de tabla sin índices
 
 Se crea la tabla envio_2 como una copia directa de la tabla envio, sin índices, para disponer de una versión de la tabla que permita medir el rendimiento sin optimizaciones (Table Scan). Evaluamos su plan de ejecucion y tiempo estimado.
 
@@ -636,7 +631,7 @@ Se crea la tabla envio_2 como una copia directa de la tabla envio, sin índices,
 SELECT * INTO envio_2 FROM envio;
 ```
 
-** Realizo una consulta por periodo en la tabla sin indice (envio_2) y registro sus tiempos de ejecucion**
+**Realizamos una consulta por periodo en la tabla sin indice (envio_2) y registramos sus tiempos de ejecucion**
 
 ```sql
 --Consulta por periodo tabla sin indice
@@ -649,14 +644,15 @@ WHERE fecha_registro BETWEEN '2018-01-01' AND '2025-01-01';
 --Lecturas logicas obtenidas: Table 'envio_2'. Scan count 1, logical reads 4465
 ```
 
-### Plan ejecucion estimado tabla envio_2 sin indices
+#### Plan de ejecucion estimado - tabla envio_2 sin indices
 
 ![Plan envio_2 sin indices](Optimizacion%20con%20indices/Assets-Indices/IndicesPlanEjecucion-1.png)
 
 **Explicacion del resultado del plan de ejecucion estimado**
+
 En este caso, el motor de SQL Server utiliza Table Scan debido a que la tabla envio_2 no posee ningún índice. Esto significa que la consulta requiere recorrer todas las filas de la tabla, hasta encontrar los registros que con fechas entre 2018 y 2015. Esta operación es muy poco eficiente para la cantidad de regitros que posee dicha tabla por lo que es conveniente crear un indice agrupado.
 
-**Realizo consulta una consulta por periodo en la tabla con indice (Envio)**
+**Realizamos una consulta por periodo en la tabla con indice (Envio) y registramos sus tiempos de ejecucion**
 
 ```sql
 --Consulta por periodo tabla con indice
@@ -668,21 +664,22 @@ WHERE fecha_registro BETWEEN '2018-01-01' AND '2025-01-01';
 --Lecturas logicas obtenidas: Table 'envio'. Scan count 1, logical reads 4483
 ```
 
-### Plan ejecucion estimado tabla envio con indice
+#### Plan de ejecucion estimado - tabla envio con indice
 ![Plan envio con indices](Optimizacion%20con%20indices/Assets-Indices/IndicesPlanEjecucion-2.png)
 
 **Explicacion del resultado del plan de ejecucion estimado**
+
 En este caso, el plan de ejecución estimado que eligió el motor fue "Clustered Index Scan" porque, si bien la tabla envio tiene un índice agrupado, dicho índice está creado sobre id_envio (PRIMARY KEY) y no sobre fecha_registro, que es la columna utilizada en el filtro.
 Debido a esto, el índice no alcanza para localizar rápidamente un subconjunto de filas dentro del rango de fechas solicitado, por lo que SQL Server debe recorrer todo el índice agrupado, evaluando fila por fila.
 
 Al tratarse de un índice agrupado, este contiene toda la información completa de cada registro, lo cual hace que el escaneo sea algo más eficiente que un Table Scan.
 Sin embargo, sigue siendo una operación costosa para una tabla con tantos registros, ya que el motor debe leer gran parte de las páginas del índice para encontrar todas las filas entre 2018-01-01 y 2025-01-01. Esto evidencia la necesidad de crear un índice sobre fecha_registro.
 
-### AMBAS CONSULTAS Y SUS COSTOS DE EJECUCION
+#### Ambas consultas y sus costos de ejecucion
 
 ![Costos_ambas consultas1](Optimizacion%20con%20indices/Assets-Indices/IndicesComparacionCostos-1.png)
 
-## 3. Creacion de indice agrupado para la tabla envio_2, evaluacion del plan de ejecucion y tiempo estimado
+### 3. Creacion de indice agrupado en tabla envio_2, evaluacion del plan de ejecucion y tiempo estimado
 
 **Creamos un indice agrupado sobre la columna fecha de la tabla envio_2**
 
@@ -704,15 +701,16 @@ WHERE fecha_registro BETWEEN '2018-01-01' AND '2025-01-01';
 --Lecturas logicas obtenidas: Table 'envio_2'. Scan count 1, logical reads 3815
 ```
 
-### Plan ejecucion estimado tabla envio_2 con indice agrupado
+#### Plan de ejecucion estimado - tabla envio_2 con indice agrupado
 
 ![Plan envio_2 indiceAgrupado](Optimizacion%20con%20indices/Assets-Indices/IndicesPlanEjecucion-3.png)
 
 **Explicacion del resultado del plan de ejecucion estimado**
+
 En este caso, el motor utiliza Clustered Index Seek. Esto ocurre porque ahora la tabla envio_2 tiene un índice agrupado creado directamente sobre fecha_registro, que es justamente la columna utilizada en el filtro de la consulta, con esto, SQL Server puede moverse directamente hasta la primera fecha que cumple la condición (2018-01-01) y luego recorrer únicamente las paginas necesarias hasta llegar al final del rango (2025-01-01), sin tener que leer el resto de la tabla.
 Esto evita escaneos completos y reduce significativamente los tiempos, el consumo de CPU y la cantidad de lecturas lógicas.
 
-**Reutilizamos la consulta sobre la tabla Envio (sin indice)**
+**Reutilizamos la misma consulta sobre la tabla Envio (sin indice)**
 
 ```sql
 --Consulta por periodo tabla con indice
@@ -721,11 +719,11 @@ FROM envio
 WHERE fecha_registro BETWEEN '2018-01-01' AND '2025-01-01';
 ```
 
-### AMBAS CONSULTAS Y SUS COSTOS DE EJECUCION
+#### Ambas consultas y sus costos de ejecucion
 
 ![Costos ambas consultas2](Optimizacion%20con%20indices/Assets-Indices/IndicesComparacionCostos-2.png)
 
-### Conclusion sobre el resultado del costo y el plan de ejecucion de ambas consultas
+#### Conclusion sobre el resultado del costo y el plan de ejecucion de ambas consultas
 
 En este caso, el motor utiliza Clustered Index Seek para la tabla envio_2 porque el índice agrupado está creado directamente sobre fecha_registro. Esto le permite buscar únicamente el rango de fechas solicitado, sin recorrer toda la tabla.
 
@@ -733,14 +731,14 @@ En cambio, en la tabla envio el índice agrupado está sobre la clave primaria (
 
 Por esto, el costo es menor en envio_2, el índice coincide con el filtro y permite un acceso mas preciso, mientras que la otra tabla necesita revisar mas registros para obtener el mismo resultado.
 
-## 4. Eliminacion del indice agrupado de la tabla envio_2
+### 4. Eliminacion del indice agrupado de la tabla envio_2
 
 ```sql
 DROP INDEX IX_fecha_registro
 ON envio_2;
 ```
 
-## 5. Creacion de indice agrupado sobre la columna fecha con columnas definidas
+### 5. Creacion de indice agrupado sobre la columna fecha con columnas definidas
 
 **Creamos un indice agrupado sobre la tabla envio_2 con columnas definidas**
 
@@ -780,11 +778,11 @@ WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_act
 --Lecturas logicas obtenidas: Table 'envio_2'. Scan count 1, logical reads 1019
 ```
 
-### Plan ejecucion estimado tabla envio_2 con indice agrupado con columnas definidas
+#### Plan de ejecucion estimado - tabla envio_2 con indice agrupado compuesto
 
 ![Plan envio_2_indicesAgrupado_columnas](Optimizacion%20con%20indices/Assets-Indices/IndicesPlanEjecucion-4.png)
 
-**Como Opcion 2, creamos un indice no agrupado sobre la tabla envio con columnas incluidas**
+**Como opcion 2, creamos un indice no agrupado sobre la tabla envio con columnas incluidas**
 
 ```sql
 --OPCION 2: Indice no agrupado con INCLUDE para las columnas
@@ -825,9 +823,14 @@ WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_act
 --Lecturas logicas obtenidas: Table 'envio'. Scan count 1, logical reads 525
 ```
 
-### Plan ejecucion estimado tabla envio con indice no agrupado con columnas incluidas
+#### Plan de ejecucion estimado - tabla envio con indice no agrupado con columnas incluidas
 
 ![Plan envio_2_indicesAgrupado_columnas](Optimizacion%20con%20indices/Assets-Indices/IndicesPlanEjecucion-5.png)
+
+
+#### Conclusion sobre el resultado del costo y el plan de ejecucion de ambas consultas
+
+Ambos indices, al incluir todas las columnas claves de las consultas (fecha, estado y ruta), mejoraron los tiempos de ejecución de forma significativa, especialmente en las consultas más complejas. Es decir las que involucran la totalidad de las columnas ya que justamente estos índices estan "preparados" para consultas que involucran estas columnas. Ademas, el indice no agrupado con include resulto más eficiente en consultas mas específicas, logrando una mayor reduccion de lecturas logicas.
 
 ---
 
@@ -1003,7 +1006,7 @@ GO
 ```
 ![Verificacion_Segundo_Restore](Backup_Restore/Assets-Backup/8_verificacion_segundo_restore.png)
 
-### Política de Backup para el sistema PaqueExpress**
+### Política de Backup para el sistema PaqueExpress
 
 #### Objetivo
 Garantizar la integridad, disponibilidad y recuperación de la información del sistema de envíos *PaqueExpress*, permitiendo restaurar el servicio ante fallos con mínima pérdida de datos.
@@ -1052,11 +1055,7 @@ Acceso al documento [PDF](doc/DiccionarioDeDatos.pdf) del diccionario de datos.
 El uso de procedimientos y funciones almacenadas en SQL Server permite encapsular la lógica de negocio y optimizar la manipulación de datos en sistemas complejos como PaqueExpress. A través de estos objetos, se logra una mejor separación de responsabilidades entre la aplicación y la base de datos, un mayor rendimiento en operaciones repetitivas, y una gestión más segura y consistente de la información. La experiencia adquirida durante la implementación permitió comprender las ventajas prácticas del enfoque set-based, así como la importancia de aplicar buenas prácticas de diseño en cada nivel del sistema.
 
 #### Optimizacion de consultas a traves de Indices
-Plan sin indices ("TABLE SCAN"): Al ejecutar las consultas sin ningún índice sobre la tabla envio_2, todas las búsquedas requerían un recorrido completo de la tabla. Esto produjo tiempos altos, mayor carga de CPU y gran cantidad de lecturas lógicas, ya que el motor debía analizar toda la tabla para encontrar los registros dentro del rango de fechas solicitado.
-
-Uso del índice en fecha_registro (IX_fecha_registro): Al aplicar un índice agrupado sobre fecha_registro, las consultas basadas únicamente en el rango de fechas mejoraron considerablemente. El motor pudo utilizar Index Seek, leyendo solo las páginas de datos necesarias. Si bien en consultas más complejas la mejora no fue tan marcada, igualmente evitó el escaneo completo y redujo significativamente el costo respecto al Table Scan.
-
-Uso de índice agrupado compuesto e índice no agrupado con INCLUDE: Ambos indices, al incluir todas las columnas claves de las consultas (fecha, estado y ruta), mejoraron los tiempos de ejecución de forma significativa, especialmente en las consultas más complejas. Es decir las que involucran la totalidad de las columnas ya que justamente estos índices estan "preparados" para consultas que involucran estas columnas. Ademas, el indice no agrupado con include al tener una estructura más "liviana" y cubrir todas las columnas, resulto más eficiente en consultas mas específicas, logrando una mayor reduccion de lecturas logicas.
+Al comparar escenarios sin índice, con índice simple por fecha y con índices más especializados (agrupado compuesto y no agrupado con INCLUDE), se evidenció que la presencia o ausencia de índices modifica por completo la estrategia de búsqueda del motor y, en consecuencia, los tiempos de respuesta y la cantidad de lecturas lógicas. Los resultados mostraron que los índices —ya sean agrupados o no agrupados— son herramientas fundamentales para mejorar la eficiencia en consultas y reducir lecturas innecesarias. También comprendimos que su diseño no debe ser arbitrario, un índice mal definido puede perjudicar el rendimiento general del sistema. La experiencia permitió comprender la importancia de identificar correctamente qué columnas deben ser indexadas, según los patrones reales de consulta, ademas de mantener estas estructuras de manera adecuada.
 
 #### Manejo de transacciones y transacciones anidadas
 
@@ -1078,8 +1077,11 @@ SQLServerCentral Community, Best Practices and Debates on Stored Procedures and 
 
 Stack Overflow Contributors, Discussions on Stored Procedures vs UDFs and Performance, StackOverflow, 2023. [Online]. Available: https://stackoverflow.com
 
-[1] https://learn.microsoft.com/es-es/sql/relational-databases/indexes/clustered-and-nonclustered-indexes-described?view=sql-server-ver17
-[2] https://blog.damavis.com/optimizacion-de-indices-en-bases-de-datos-relacionales/
+Microsoft, "Clustered and Nonclustered Indexes Described," 2024. [Online]. Available: https://learn.microsoft.com/es-es/sql/relational-databases/indexes/clustered-and-nonclustered-indexes-described?view=sql-server-ver17
+
+Damavis, "Optimización de índices en bases de datos relacionales," 2021. [Online]. Available: https://blog.damavis.com/optimizacion-de-indices-en-bases-de-datos-relacionales/
+
+A. Silberschatz, H. F. Korth, y S. Sudarshan, Fundamentos de Bases de Datos, 4ta ed. México: McGraw-Hill, 2002.
 
 Microsoft Learn, “Backup overview (SQL Server)” [Online]. Available: https://learn.microsoft.com/en-us/sql/relational-databases/backup-restore/backup-overview-sql-server?view=sql-server-ver17.
 
