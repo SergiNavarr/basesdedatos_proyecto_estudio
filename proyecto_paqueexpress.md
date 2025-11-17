@@ -834,6 +834,7 @@ WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_act
 
 ## TEMA 4:  Backup y restore. Backup en línea
 Iniciamos verificando la cantidad de registros en tablas al azar, por ejemplo Paquete y Envio
+
 ![Verificacion_Inicial_PreBackup](Backup_Restore/Assets-Backup/0_verificacion_inicial.png)
 
 Comprobamos el modo de recuperación de la base de datos
@@ -1063,14 +1064,20 @@ El procedimiento realizado evidenció que un plan de copias de seguridad bien or
 
 ## BIBLIOGRAFÍA DE CONSULTA
 Microsoft, Stored Procedures (Database Engine), Microsoft Docs, 2023. [Online]. Available: https://learn.microsoft.com/en-us/sql/relational-databases/stored-procedures/stored-procedures-database-engine
+
 Microsoft, CREATE PROCEDURE (Transact-SQL), Microsoft Docs, 2023. [Online]. Available: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-procedure-transact-sql
+
 Oracle, Advantages of Stored Procedures, Oracle Documentation, 2023. [Online]. Available: https://docs.oracle.com
+
 Wise Owl Training, Calculating Age in SQL Server (DATEDIFF + DATEADD Recommended Approach), WiseOwl.co.uk, 2023. [Online]. Available: https://www.wiseowl.co.uk
+
 SQLServerCentral Community, Best Practices and Debates on Stored Procedures and UDFs Performance, SQLServerCentral, 2023. [Online]. Available: https://www.sqlservercentral.com
+
 Stack Overflow Contributors, Discussions on Stored Procedures vs UDFs and Performance, StackOverflow, 2023. [Online]. Available: https://stackoverflow.com
 
 [1] https://learn.microsoft.com/es-es/sql/relational-databases/indexes/clustered-and-nonclustered-indexes-described?view=sql-server-ver17
 [2] https://blog.damavis.com/optimizacion-de-indices-en-bases-de-datos-relacionales/
 
 Microsoft Learn, “Backup overview (SQL Server)” [Online]. Available: https://learn.microsoft.com/en-us/sql/relational-databases/backup-restore/backup-overview-sql-server?view=sql-server-ver17.
+
 J. Gavin, “Restore database SQL Server options and examples” MSSQLTips, [Online]. Available: https://www.mssqltips.com/sqlservertip/6893/restore-database-sql-server-options-examples/.
