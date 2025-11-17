@@ -45,6 +45,9 @@
 ## CAPÍTULO V: CONCLUSIONES
 - [Conclusiones](#capítulo-v-conclusiones)
 
+## CAPÍTULO VI: BIBLIOGRAFÍA
+- [Bibliografía](#capítulo-vi-bibliografía)
+
 ---
 
 ## CAPÍTULO I: INTRODUCCIÓN
@@ -1062,7 +1065,7 @@ La implementación de una política de backup y restore en el sistema de envíos
 
 El procedimiento realizado evidenció que un plan de copias de seguridad bien organizado no solo permite recuperar la base de datos sin pérdidas relevantes, sino que también garantiza la continuidad operativa de la empresa. En conjunto, este trabajo destaca el valor de los procesos de respaldo y restauración como piezas clave en la administración de bases de datos.
 
-## BIBLIOGRAFÍA DE CONSULTA
+## CAPÍTULO VI: BIBLIOGRAFÍA
 Microsoft, Stored Procedures (Database Engine), Microsoft Docs, 2023. [Online]. Available: https://learn.microsoft.com/en-us/sql/relational-databases/stored-procedures/stored-procedures-database-engine
 
 Microsoft, CREATE PROCEDURE (Transact-SQL), Microsoft Docs, 2023. [Online]. Available: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-procedure-transact-sql
