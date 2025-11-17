@@ -936,7 +936,7 @@ Ambos indices, al incluir todas las columnas claves de las consultas (fecha, est
 ## TEMA 3:  Manejo de transacciones y transacciones anidadas
 
 Iniciamos verificando la cantidad de registros en las tablas seleccionadas para nuestra transacción, en este caso ruta y envío
-![Estado_inicial_tablas_ruta_y_envio](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_inical_tablas_ruta_y_envio.png)
+![Estado_inicial_tablas_ruta_y_envio](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_inicial_tablas_ruta_y_envio.png)
 
 Declaramos la transacción
 ```sql
@@ -970,10 +970,12 @@ BEGIN CATCH
     PRINT ERROR_MESSAGE();
 END CATCH;
 ```
-Podemos ver que en la salida de la consulta se ven las filas afectadas correctamente
+Podemos ver que en la salida de la consulta se ven las filas afectadas correctamente.
+
 ![Salida_transaccion_correcta](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/salida_transaccion_correcta.png)
 
-Luego volvemos a verificar la cantidad de registros en las tablas correspondientes
+Luego volvemos a verificar la cantidad de registros en las tablas correspondientes.
+
 ![Estado_tablas_ruta_y_envio_post_transaccion](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_tablas_ruta_y_envio_post_transaccion_correcta.png)
 
 Ahora pasamos a modificar el script de la transacción agregando un error intencional para observar el funcionamieto del rollback
