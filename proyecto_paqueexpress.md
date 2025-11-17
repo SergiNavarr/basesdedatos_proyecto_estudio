@@ -51,8 +51,43 @@ Diseñar e implementar un sistema de base de datos que centralice la informació
 En un entorno cada vez más competitivo, la digitalización y la automatización de los procesos internos se vuelven factores clave para mantener la eficiencia y la rentabilidad. Un sistema como PaqueExpress, respaldado por un diseño sólido de base de datos y por el uso de procedimientos y funciones almacenadas, representa una herramienta estratégica para mejorar la trazabilidad de los envíos, optimizar los tiempos de respuesta y garantizar un flujo de información seguro y confiable entre las distintas áreas de la organización.
 
 ## TEMA 1: Procedimientos almacenados y las funciones definidas por el Usuario
+### Conceptos clave
 
-## TEMA 3: Optimización de Consultas a través de Índices
+- *Procedimiento almacenado (Stored Procedure):* Es un bloque de T-SQL(Transact-SQL) compilado que puede ejecutar operaciones (SELECT/INSERT/UPDATE/DELETE), recibir parámetros (IN/OUT), y realizar lógica de negocio compleja. Mejora el rendimiento (plan cached), reduce el tráfico de red y centraliza la lógica. 
+
+- *Función (User-Defined Function, UDF):* devuelve un valor (escalares) o una tabla (table-valued). Ideal para cálculos reutilizables (p. ej. edad, conversiones). Las UDFs no deben tener efectos secundarios (no deben modificar datos) en SQL Server.
+
+- *Diferencias claves:* los procedimientos pueden modificar datos y usar transacciones; las funciones se usan para cálculos y su uso dentro de SELECT/WHERE es más natural. También hay restricciones de determinismo y funciones no deterministas (ej. GETDATE()) que afectan optimizaciones.
+
+### Buenas prácticas 
+
+  - Usar SET NOCOUNT ON al inicio del SP (reduce mensajes de filas afectadas). 
+
+  - Especificar el esquema (ej. dbo.) para invocaciones/creación. 
+
+  - Validar parámetros de entrada (no confiar solo en constraints). 
+
+  - Preferir operaciones set-based (no cursores) cuando sea posible. 
+
+  - Para evitar UDFs(User-Defined Functions) con lógica pesada por fila, se considera usar funciones en línea table-valued si se necesita rendimiento. 
+
+###Comparación: operaciones directas vs uso de procedimientos/funciones
+
+#### Ventajas de usar procedimientos y funciones
+
+- Rendimiento: los SPs tienen planes en caché y reducen tráfico cliente-servidor al ejecutar múltiples statements en una sola llamada. Esto mejora latencia para operaciones repetidas. 
+
+- Seguridad: con SPs puedes otorgar permisos de ejecución y limitar acceso directo a tablas; facilita validación centralizada. 
+
+- Mantenimiento: la lógica centralizada evita duplicación en la aplicación. 
+
+#### Consideraciones y limitaciones
+
+- Complejidad del despliegue: cambios en SPs requieren despliegue en BD.
+
+- Rendimiento en UDFs: funciones escalares (particularmente las definidas por usuario que no son inline table-valued) pueden ser evaluadas por fila y penalizar rendimiento; para operaciones masivas conviene funciones en línea o SPs set-based. 
+
+## TEMA 2: Optimización de Consultas a través de Índices
 
 La optimización de consultas mediante índices constituye una técnica esencial para mejorar el
 rendimiento de los sistemas de gestión de bases de datos, especialmente en entornos donde
@@ -149,11 +184,271 @@ operaciones de escritura (INSERT, UPDATE, DELETE) deben actualizar también las
 estructuras de índice asociadas. Esto puede generar fragmentación interna, afectando el
 rendimiento de lectura si no se gestiona adecuadamente.
 
+## TEMA 3:  Manejo de transacciones y transacciones anidadas
+
+## TEMA 4:  Backup y restore. Backup en línea
+
 ## CAPÍTULO III: METODOLOGÍA SEGUIDA
 
 ## CAPÍTULO IV: DESARROLLO DEL TEMA / PRESENTACIÓN DE RESULTADOS
 
-## Tema 3: Optimización de Consultas a traves de Índices
+## TEMA 1: Procedimientos almacenados y las funciones definidas por el Usuario
+
+### Procecimientos Almacenados
+
+#### sp_InsertCliente — insertar cliente (devuelve id creado)
+```sql
+CREATE OR ALTER PROCEDURE dbo.sp_InsertCliente
+    @Nombre VARCHAR(100),
+    @Apellido VARCHAR(100),
+    @DNI VARCHAR(20),
+    @Email VARCHAR(100) = NULL,
+    @IdDireccion INT,
+    @NewId INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        INSERT INTO cliente (nombre, apellido, dni, email, id_direccion)
+        VALUES (@Nombre, @Apellido, @DNI, @Email, @IdDireccion);
+
+        SET @NewId = SCOPE_IDENTITY();
+    END TRY
+    BEGIN CATCH
+        SET @NewId = -1;
+        THROW;
+    END CATCH
+END
+GO
+```
+
+Ejemplo:
+```sql
+DECLARE @IdCli INT;
+EXEC sp_InsertCliente 'Juan','Miño','1111111','juancitoMiño@outlook.com',1,@IdCli OUTPUT;
+SELECT @IdCli AS Id_Cliente_Nuevo;
+```
+
+![Resultado_SP_Insertar_Cliente](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/sp1InsertarNuevoCliente.png)
+
+#### sp_UpdateCliente — modificar datos de cliente
+```sql
+CREATE OR ALTER PROCEDURE dbo.sp_UpdateCliente
+    @IdCliente INT,
+    @Nombre VARCHAR(100) = NULL,
+    @Apellido VARCHAR(100) = NULL,
+    @DNI VARCHAR(20) = NULL,
+    @Email VARCHAR(100) = NULL,
+    @IdDireccion INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        UPDATE cliente
+        SET nombre = COALESCE(@Nombre, nombre),
+            apellido = COALESCE(@Apellido, apellido),
+            dni = COALESCE(@DNI, dni),
+            email = COALESCE(@Email, email),
+            id_direccion = COALESCE(@IdDireccion, id_direccion)
+        WHERE id_cliente = @IdCliente;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+```
+
+Ejemplo:
+```sql
+EXEC sp_UpdateCliente @IdCliente=56, @Email ='juancitu5@email.com';
+SELECT id_cliente, nombre, email FROM cliente WHERE id_cliente = 56;
+```
+
+![Resultado_SP_Actualizar_Cliente](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/sp2_ActualizarCliente.png)
+
+#### SP para paquete (insert)
+```sql
+CREATE OR ALTER PROCEDURE dbo.sp_InsertPaquete
+    @Peso DECIMAL(10,2),
+    @Dimensiones VARCHAR(50) = NULL,
+    @ValorDeclarado DECIMAL(10,2) = 0,
+    @IdTipoPaquete INT,
+    @IdClienteOrigen INT,
+    @IdClienteDestino INT,
+    @NewId INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        INSERT INTO paquete
+            (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
+        VALUES
+            (@Peso, @Dimensiones, @ValorDeclarado, @IdTipoPaquete, @IdClienteOrigen, @IdClienteDestino);
+
+        SET @NewId = SCOPE_IDENTITY();
+    END TRY
+    BEGIN CATCH
+        SET @NewId = -1;
+        THROW;
+    END CATCH
+END
+GO
+```
+
+Ejemplo:
+```sql
+DECLARE @IdPaq INT;
+EXEC sp_InsertPaquete 2.5,'30x20x10',15000,2,1,2,@IdPaq OUTPUT;
+SELECT @IdPaq AS NuevoPaquete;
+```
+
+![Resultado_SP_Insertar_Paquete](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/sp3_InsertarPaquete.png)
+
+#### SP para envio (insert con transacción simple)
+```sql
+CREATE OR ALTER PROCEDURE dbo.sp_InsertEnvio
+    @IdPaquete INT,
+    @IdRuta INT,
+    @IdVehiculo INT,
+    @IdEmpleadoResponsable INT,
+    @IdEstadoActual INT,
+    @FechaRegistro DATE = NULL,
+    @NewId INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        IF @FechaRegistro IS NULL SET @FechaRegistro = GETDATE();
+
+        BEGIN TRANSACTION;
+
+        INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
+        VALUES (@FechaRegistro, @IdPaquete, @IdRuta, @IdVehiculo, @IdEmpleadoResponsable, @IdEstadoActual);
+
+        SET @NewId = SCOPE_IDENTITY();
+
+        INSERT INTO historial_envio (id_envio, fecha_hora, id_estado, observaciones)
+        VALUES (@NewId, GETDATE(), @IdEstadoActual, 'Registro inicial');
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        SET @NewId = -1;
+        THROW;
+    END CATCH
+END
+GO
+
+```
+
+Ejemplo:
+```sql
+DECLARE @IdEnv INT;
+EXEC sp_InsertEnvio
+     @IdPaquete=1,
+     @IdRuta=1,
+     @IdVehiculo=1,
+     @IdEmpleadoResponsable=1,
+     @IdEstadoActual=1,
+     @NewId=@IdEnv OUTPUT;
+SELECT @IdEnv AS NuevoEnvio;
+```
+
+![Resultado_SP_Insertar_Envio](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/sp4_InsetarEnvio.png)
+
+### Funciones almacenadas
+
+#### fn_TiempoContratacion — años desde fecha_contratacion (antigüedad en la empresa)
+```sql
+CREATE OR ALTER FUNCTION dbo.fn_TiempoContratacion(@IdEmpleado INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @Fecha DATE;
+    SELECT @Fecha = fecha_contratacion FROM empleado WHERE id_empleado=@IdEmpleado;
+
+    IF @Fecha IS NULL RETURN NULL;
+
+    RETURN DATEDIFF(YEAR,@Fecha,GETDATE()) -
+           CASE WHEN DATEADD(YEAR,DATEDIFF(YEAR,@Fecha,GETDATE()),@Fecha) > GETDATE()
+                THEN 1 ELSE 0 END;
+END
+GO
+```
+
+Ejemplo:
+```sql
+SELECT dbo.fn_TiempoContratacion(2) AS Antiguedad;
+```
+
+![Resultado_FN_Tiempo_Contratacion](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/fn1_TiempoContratacion.png)
+
+#### fn_PesoVolumetrico
+
+  Parámetros:  
+      @AltoCM-> Alto del paquete en centímetros  
+      @AnchoCM-> Ancho del paquete en centímetros  
+      @LargoCM-> Largo del paquete en centímetros  
+  Retorna:
+      DECIMAL(10,2) -> Peso volumétrico en kilogramos
+     
+  Fórmula:
+      PesoVolumétrico = (Alto * Ancho * Largo) / 5000
+
+```sql
+CREATE OR ALTER FUNCTION dbo.fn_PesoVolumetrico
+(
+    @AltoCM DECIMAL(10,2),
+    @AnchoCM DECIMAL(10,2),
+    @LargoCM DECIMAL(10,2)
+)
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    IF @AltoCM IS NULL OR @AnchoCM IS NULL OR @LargoCM IS NULL
+        RETURN NULL;
+
+    RETURN ROUND((@AltoCM * @AnchoCM * @LargoCM) / 5000,2);
+END
+GO
+```
+
+Calcula el peso volumétrico (en kg) de un paquete segun la formula estandar utilizada por servicios de correo y logística en Argentina, donde el divisor habitual es de 5000 para cm³.
+
+Ejemplo:
+```sql
+SELECT dbo.fn_PesoVolumetrico(30,20,10) AS PesoVol; -- Esto devuelve peso en kg.
+```
+
+![Resultado_FN_Peso_Volumetrico](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/fn2_PesoVolumetrico.png)
+
+#### fn_PaqueteEsAltoRiesgo — determina riesgo por valor_declarado
+
+```sql
+CREATE OR ALTER FUNCTION dbo.fn_PaqueteEsAltoRiesgo(@ValorDeclarado DECIMAL(10,2))
+RETURNS VARCHAR(2)
+AS
+BEGIN
+    IF @ValorDeclarado IS NULL RETURN 0;
+    RETURN CASE WHEN @ValorDeclarado >= 100000 THEN 'Si' ELSE 'NO' END;
+END
+GO
+```
+
+Ejemplo:
+```sql
+SELECT dbo.fn_PaqueteEsAltoRiesgo(150000) AS EsAltoRiesgo;
+```
+
+![Resultado_FN_Paquete_Alto_Riesgo](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/fn3_PaqueteEsAltoRiesgo.png)
+
+## Tema 2: Optimización de Consultas a traves de Índices
 
 ## 1. Eleccion de tabla e Insercion de datos
 
@@ -420,7 +715,14 @@ WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_act
 
 Acceso al documento [PDF](doc/DiccionarioDeDatos.pdf) del diccionario de datos.
 
+## TEMA 3:  Manejo de transacciones y transacciones anidadas
+
+## TEMA 4:  Backup y restore. Backup en línea
+
 ## CAPÍTULO V: CONCLUSIONES
+
+#### Procedimientos almacenados y las funciones definidas por el Usuario
+El uso de procedimientos y funciones almacenadas en SQL Server permite encapsular la lógica de negocio y optimizar la manipulación de datos en sistemas complejos como PaqueExpress. A través de estos objetos, se logra una mejor separación de responsabilidades entre la aplicación y la base de datos, un mayor rendimiento en operaciones repetitivas, y una gestión más segura y consistente de la información. La experiencia adquirida durante la implementación permitió comprender las ventajas prácticas del enfoque set-based, así como la importancia de aplicar buenas prácticas de diseño en cada nivel del sistema.
 
 #### Optimizacion de consultas a traves de Indices
 Plan sin indices ("TABLE SCAN"): Al ejecutar las consultas sin ningún índice sobre la tabla envio_2, todas las búsquedas requerían un recorrido completo de la tabla. Esto produjo tiempos altos, mayor carga de CPU y gran cantidad de lecturas lógicas, ya que el motor debía analizar toda la tabla para encontrar los registros dentro del rango de fechas solicitado.
@@ -429,7 +731,23 @@ Uso del índice en fecha_registro (IX_fecha_registro): Al aplicar un índice agr
 
 Uso de índice agrupado compuesto e índice no agrupado con INCLUDE: Ambos indices, al incluir todas las columnas claves de las consultas (fecha, estado y ruta), mejoraron los tiempos de ejecución de forma significativa, especialmente en las consultas más complejas. Es decir las que involucran la totalidad de las columnas ya que justamente estos índices estan "preparados" para consultas que involucran estas columnas. Ademas, el indice no agrupado con include al tener una estructura más "liviana" y cubrir todas las columnas, resulto más eficiente en consultas mas específicas, logrando una mayor reduccion de lecturas logicas.
 
+#### Manejo de transacciones y transacciones anidadas
+
+#### Backup y restore. Backup en línea
+
 ## BIBLIOGRAFÍA DE CONSULTA
+Microsoft, Stored Procedures (Database Engine), Microsoft Docs, 2023. [Online]. Available: https://learn.microsoft.com/en-us/sql/relational-databases/stored-procedures/stored-procedures-database-engine
+
+Microsoft, CREATE PROCEDURE (Transact-SQL), Microsoft Docs, 2023. [Online]. Available: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-procedure-transact-sql
+
+Oracle, Advantages of Stored Procedures, Oracle Documentation, 2023. [Online]. Available: https://docs.oracle.com
+
+Wise Owl Training, Calculating Age in SQL Server (DATEDIFF + DATEADD Recommended Approach), WiseOwl.co.uk, 2023. [Online]. Available: https://www.wiseowl.co.uk
+
+SQLServerCentral Community, Best Practices and Debates on Stored Procedures and UDFs Performance, SQLServerCentral, 2023. [Online]. Available: https://www.sqlservercentral.com
+
+Stack Overflow Contributors, Discussions on Stored Procedures vs UDFs and Performance, StackOverflow, 2023. [Online]. Available: https://stackoverflow.com
+
 [1] https://learn.microsoft.com/es-es/sql/relational-databases/indexes/clustered-and-nonclustered-indexes-described?view=sql-server-ver17
 [2] https://blog.damavis.com/optimizacion-de-indices-en-bases-de-datos-relacionales/
 
