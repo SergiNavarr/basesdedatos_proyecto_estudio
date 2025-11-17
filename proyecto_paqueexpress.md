@@ -13,6 +13,40 @@
 
 **Año**: 2025
 
+---
+
+# ÍNDICE
+
+- [Proyecto de Estudio](#proyecto-de-estudio)  
+- [PRESENTACIÓN - PaqueExpress](#presentación---paqueexpress)
+
+## CAPÍTULO I: INTRODUCCIÓN
+- [Caso de estudio](#caso-de-estudio)  
+- [Definición o planteamiento del problema](#definición-o-planteamiento-del-problema)  
+- [Objetivo del Trabajo Práctico](#objetivo-del-trabajo-práctico)  
+- [Objetivo Generales](#objetivo-generales)  
+- [Objetivos Específicos](#objetivos-específicos)
+
+## CAPÍTULO II: MARCO CONCEPTUAL O REFERENCIAL
+- [TEMA 1: Procedimientos almacenados y funciones UDF](#tema-1-procedimientos-almacenados-y-las-funciones-definidas-por-el-usuario)  
+- [TEMA 2: Optimización de consultas a través de índices](#tema-2-optimización-de-consultas-a-través-de-índices)  
+- [TEMA 3: Manejo de transacciones y transacciones anidadas](#tema-3--manejo-de-transacciones-y-transacciones-anidadas)  
+- [TEMA 4: Backup y restore. Backup en línea](#tema-4--backup-y-restore-backup-en-línea)
+
+## CAPÍTULO III: METODOLOGÍA SEGUIDA
+- [Metodología](#capítulo-iii-metodología-seguida)
+
+## CAPÍTULO IV: DESARROLLO DEL TEMA / PRESENTACIÓN DE RESULTADOS
+- [TEMA 1: Procedimientos y Funciones](#tema-1-procedimientos-almacenados-y-las-funciones-definidas-por-el-usuario-1)  
+- [TEMA 2: Optimización de consultas con índices](#tema-2-optimización-de-consultas-a-traves-de-índices)  
+- [TEMA 3: Manejo de transacciones y transacciones anidadas](#tema-3--manejo-de-transacciones-y-transacciones-anidadas-1)  
+- [TEMA 4: Backup y restore. Backup en línea](#tema-4--backup-y-restore-backup-en-línea-1)
+
+## CAPÍTULO V: CONCLUSIONES
+- [Conclusiones](#capítulo-v-conclusiones)
+
+---
+
 ## CAPÍTULO I: INTRODUCCIÓN
 
 ### Caso de estudio
@@ -40,15 +74,7 @@ Diseñar e implementar un sistema de base de datos que centralice la informació
 
 ## CAPITULO II: MARCO CONCEPTUAL O REFERENCIAL
 
-- El desarrollo de un sistema de gestión como PaqueExpress requiere considerar diversos aspectos técnicos y conceptuales que garantizan su eficiencia, confiabilidad y capacidad de adaptación a las necesidades operativas de una empresa dedicada al transporte y distribución de paquetes. Este tipo de sistema busca optimizar la administración de los procesos logísticos, desde la recepción de los envíos hasta la entrega final al cliente, manteniendo siempre la integridad y trazabilidad de la información.
-
-- La incorporación de herramientas tecnológicas avanzadas, como los procedimientos almacenados y las funciones definidas por el usuario, la optimización de consultas mediante índices, el manejo de transacciones y transacciones anidadas, así como los mecanismos de backup y restore -*incluyendo la posibilidad de generar copias de seguridad en línea desde el propio motor de base de datos SQL Server*-, permite centralizar la lógica de negocio directamente en el servidor.
-
-- Esto mejora el rendimiento general del sistema, reduce la carga de procesamiento en las aplicaciones cliente y garantiza una mayor seguridad y consistencia en el manejo de la información. Gracias a estos componentes, PaqueExpress logra ejecutar de manera controlada las operaciones de inserción, modificación y eliminación de registros, manteniendo la integridad referencial entre las diferentes entidades del sistema.
-
-- Asimismo, el diseño modular de la base de datos de PaqueExpress posibilita la ampliación futura del sistema sin comprometer su estabilidad. Este enfoque permite incorporar nuevas funcionalidades —como la gestión de tarifas, seguimientos en tiempo real o análisis estadístico de rendimiento— sin alterar la estructura principal del proyecto. De esta forma, el sistema se adapta a la evolución tecnológica y a las necesidades específicas de distintos tipos de empresas del rubro logístico.
-
-En un entorno cada vez más competitivo, la digitalización y la automatización de los procesos internos se vuelven factores clave para mantener la eficiencia y la rentabilidad. Un sistema como PaqueExpress, respaldado por un diseño sólido de base de datos y por el uso de procedimientos y funciones almacenadas, representa una herramienta estratégica para mejorar la trazabilidad de los envíos, optimizar los tiempos de respuesta y garantizar un flujo de información seguro y confiable entre las distintas áreas de la organización.
+El desarrollo del sistema PaqueExpress requiere una base sólida de conceptos que permitan gestionar los datos de forma eficiente, segura y confiable. Entre los conceptos abordados se encuentran los procedimientos almacenados y las funciones definidas por el usuario, que permiten centralizar la lógica de negocio y mejorar el rendimiento del sistema; la optimización de consultas mediante índices, fundamental para acelerar el acceso a grandes volúmenes de información; el manejo de transacciones y transacciones anidadas, que garantiza la integridad de los datos en operaciones críticas; y los mecanismos de backup y restore, incluyendo los respaldos en línea, necesarios para asegurar la disponibilidad y recuperación de la base de datos. Estos elementos constituyen el marco técnico que permite que PaqueExpress opere con consistencia, alto rendimiento y capacidad de adaptación dentro de un entorno logístico competitivo y en constante evolución.
 
 ## TEMA 1: Procedimientos almacenados y las funciones definidas por el Usuario
 ### Conceptos clave
@@ -71,7 +97,7 @@ En un entorno cada vez más competitivo, la digitalización y la automatización
 
   - Para evitar UDFs(User-Defined Functions) con lógica pesada por fila, se considera usar funciones en línea table-valued si se necesita rendimiento. 
 
-###Comparación: operaciones directas vs uso de procedimientos/funciones
+### Comparación: operaciones directas vs uso de procedimientos/funciones
 
 #### Ventajas de usar procedimientos y funciones
 
@@ -86,6 +112,8 @@ En un entorno cada vez más competitivo, la digitalización y la automatización
 - Complejidad del despliegue: cambios en SPs requieren despliegue en BD.
 
 - Rendimiento en UDFs: funciones escalares (particularmente las definidas por usuario que no son inline table-valued) pueden ser evaluadas por fila y penalizar rendimiento; para operaciones masivas conviene funciones en línea o SPs set-based. 
+
+---
 
 ## TEMA 2: Optimización de Consultas a través de Índices
 
@@ -184,9 +212,99 @@ operaciones de escritura (INSERT, UPDATE, DELETE) deben actualizar también las
 estructuras de índice asociadas. Esto puede generar fragmentación interna, afectando el
 rendimiento de lectura si no se gestiona adecuadamente.
 
+---
+
 ## TEMA 3:  Manejo de transacciones y transacciones anidadas
 
+---
+
 ## TEMA 4:  Backup y restore. Backup en línea
+
+### **Introducción**
+
+Los **backups** son fundamentales para garantizar la **disponibilidad**, **integridad** y **seguridad** de los datos. Dado que las bases de datos constituyen un componente crítico en la mayoría de las aplicaciones empresariales, es imprescindible contar con estrategias efectivas que las protejan frente a **pérdida de información**, **corrupciones**, **fallos de hardware** o **errores humanos**.  
+
+En este contexto, los mecanismos de **backup en línea** y los procedimientos de **restore** (restauración) resultan esenciales para asegurar que una base de datos pueda recuperarse sin interrumpir el servicio.  
+
+En **SQL Server**, las tareas de **backup y restore** son pilares clave para preservar la **disponibilidad** y **recuperación** de los datos. Existen distintos tipos de respaldo —**full**, **differential**, **transaction log** y **file/filegroup**—, junto con diversos **modelos de recuperación**, que determinan qué tipo de respaldo realizar y cómo llevar a cabo la restauración de la base de datos.
+
+### **1. Backup**
+
+Un **backup** es una copia de seguridad de los datos tomada en un punto específico del tiempo. Su propósito es permitir la restauración de la base de datos ante fallos o pérdidas de información.
+
+#### **Tipos de Backup**
+
+- **Backup Completo (Full Backup)**  
+  Realiza una copia de todos los datos y objetos de la base de datos, sin importar si han cambiado o no desde el último respaldo.  
+  En SQL Server, el *full backup* sirve como base para los respaldos diferenciales y de log posteriores, y representa el estado completo de la base en un momento determinado.
+
+- **Backup Diferencial (Differential Backup)**  
+  Incluye únicamente los datos que han cambiado desde el último *full backup*. Es más rápido que un respaldo completo, aunque depende del último *full backup* para su restauración.
+
+- **Backup de Log (Transaction Log Backup)**  
+  Crea una copia del archivo de log de transacciones, que registra todas las operaciones ejecutadas en la base de datos. Este tipo de respaldo permite la **recuperación punto en el tiempo**, restaurando el estado exacto antes de un error o evento no deseado.
+
+- **Backup en Línea (Online Backup)**  
+  Se ejecuta mientras la base de datos sigue en funcionamiento, permitiendo que las operaciones continúen sin interrupción.
+
+- **Backup de Archivos o Grupos de Archivos (File / Filegroup Backup)**  
+  Permite realizar respaldos parciales de archivos o grupos de archivos específicos dentro de la base de datos. Esta modalidad posibilita **restauraciones parciales o en línea** sin necesidad de dejar toda la base de datos fuera de servicio.
+
+---
+
+#### **Modelos de Recuperación**
+
+El modelo de recuperación determina cómo SQL Server gestiona el log de transacciones y qué opciones de respaldo y restauración están disponibles.
+
+- **Simple**  
+  No permite *transaction log backups* ni recuperación a punto en el tiempo. El log se trunca automáticamente. Es adecuado cuando no se requiere recuperación granular o cuando la pérdida de datos reciente es aceptable.
+
+- **Full**  
+  Conserva todo el historial del log, lo que posibilita respaldos de log y recuperación exacta a un momento específico. Es el modelo más flexible y el más utilizado en entornos de producción.
+
+- **Bulk-Logged**  
+  Similar al modelo *Full*, pero reduce el registro de transacciones en operaciones masivas (*bulk operations*), mejorando el rendimiento. No permite recuperación punto en el tiempo si una operación masiva ocurre entre respaldos de log.
+
+---
+
+### **2. Restore**
+
+El **restore** o restauración es el proceso de recuperación de una base de datos a partir de los respaldos almacenados. La secuencia de restauración depende del tipo de respaldo y del modelo de recuperación configurado.
+
+#### **Tipos de Restauración**
+
+- **Restauración Completa (Full Restore)**  
+  Restaura toda la base de datos a partir de un *full backup*.
+
+- **Restauración Diferencial (Differential Restore)**  
+  Requiere aplicar primero el *full backup* y luego el *differential backup* más reciente para reconstruir el estado actual.
+
+- **Restauración del Log (Log Restore)**  
+  Se aplica después del *full* o *differential backup* para reproducir todas las transacciones registradas y recuperar la base hasta un punto específico en el tiempo.
+
+#### **Ejemplo de restauración básica en SQL Server:**
+```sql
+RESTORE DATABASE MiBase
+FROM DISK = 'C:\Backups\MiBase_FULL.bak'
+WITH NORECOVERY;
+
+RESTORE LOG MiBase
+FROM DISK = 'C:\Backups\MiBase_LOG.trn'
+WITH RECOVERY;
+```
+---
+
+### **3. Backup en Línea**
+
+El **backup en línea** resulta crítico en sistemas que requieren **alta disponibilidad** y **operación continua**.  
+Permite realizar respaldos mientras los usuarios siguen ejecutando consultas o modificando datos, sin detener el servicio.
+
+SQL Server maneja internamente los **bloqueos** y las **transacciones activas** para garantizar que el respaldo sea **consistente** y **confiable**. Esta funcionalidad es esencial en entornos de producción donde los **periodos de mantenimiento** deben reducirse al mínimo.
+
+En SQL Server, el **online restore** o **piecemeal restore** permite restaurar partes específicas de la base de datos (como archivos o *filegroups*) mientras el resto del sistema permanece disponible.  
+Esta característica es especialmente valiosa en bases de datos de **gran tamaño**, donde un restore completo implicaría **tiempos de inactividad prolongados**.
+
+---
 
 ## CAPÍTULO III: METODOLOGÍA SEGUIDA
 
@@ -448,6 +566,8 @@ SELECT dbo.fn_PaqueteEsAltoRiesgo(150000) AS EsAltoRiesgo;
 
 ![Resultado_FN_Paquete_Alto_Riesgo](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/fn3_PaqueteEsAltoRiesgo.png)
 
+---
+
 ## Tema 2: Optimización de Consultas a traves de Índices
 
 ## 1. Eleccion de tabla e Insercion de datos
@@ -706,6 +826,213 @@ WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_act
 
 ![Plan envio_2_indicesAgrupado_columnas](Optimizacion%20con%20indices/Assets-Indices/IndicesPlanEjecucion-5.png)
 
+---
+
+## TEMA 3:  Manejo de transacciones y transacciones anidadas
+
+---
+
+## TEMA 4:  Backup y restore. Backup en línea
+Iniciamos verificando la cantidad de registros en tablas al azar, por ejemplo Paquete y Envio
+![Verificacion_Inicial_PreBackup](Backup_Restore/Assets-Backup/0_verificacion_inicial.png)
+
+Comprobamos el modo de recuperación de la base de datos
+```sql
+SELECT name AS NombreBD, recovery_model_desc AS ModoRecuperacion
+FROM sys.databases
+WHERE name = 'PaqueExpress';
+GO
+
+-- Establecemos el modo FULL, necesario para backups de log
+ALTER DATABASE PaqueExpress SET RECOVERY FULL WITH NO_WAIT;
+GO
+```
+![Modo_Recuperacion](Backup_Restore/Assets-Backup/1_backup_modo_recuperacion.png)
+
+Realizamos el Backup Full
+```sql
+BACKUP DATABASE PaqueExpress
+TO DISK = 'C:\Backup\PaqueExpress_FULL.bak'
+WITH NAME = 'PaqueExpress - Backup Completo Inicial',
+     CHECKSUM,
+     STATS = 10;
+GO
+```
+![Backup_Full](Backup_Restore/Assets-Backup/2_backup_full.png)
+
+Insertamos 10 registros en Paquetes y Envios, y hacemos el primer Backup Log
+```sql
+-- BLOQUE DE INSERCIÓN #1
+USE PaqueExpress;
+GO
+
+DECLARE @id_paquete INT;
+DECLARE @i INT = 1;
+
+WHILE @i <= 10
+BEGIN
+    INSERT INTO paquete (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
+    VALUES (ABS(CHECKSUM(NEWID())) % 50 + 1, '40x30x20', (ABS(CHECKSUM(NEWID())) % 100000) + 1000, 1, 5, 8);
+
+    SET @id_paquete = SCOPE_IDENTITY();
+
+    INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
+    VALUES (GETDATE(), @id_paquete, 2, 3, 4, 1);
+
+    SET @i += 1;
+END;
+GO
+
+-- BACKUP DEL LOG DE TRANSACCIONES #1
+BACKUP LOG PaqueExpress
+TO DISK = 'C:\Backup\PaqueExpress_Log1.trn'
+WITH NAME = 'PaqueExpress - Backup de Log 1',
+     CHECKSUM,
+     STATS = 10;
+GO
+
+-- Registrar la hora del backup
+DECLARE @HoraInicioBackupLog1 DATETIME2 = SYSDATETIME();
+SELECT @HoraInicioBackupLog1 AS Hora_BackupLog1;
+```
+![Backup_Log1](Backup_Restore/Assets-Backup/3_backup_log1.png)
+
+Insertamos otros 10 registros en Paquetes y Envios, y hacemos el segundo Backup Log
+```sql
+-- BLOQUE DE INSERCIÓN #2
+DECLARE @id_paquete2 INT;
+DECLARE @j INT = 1;
+
+WHILE @j <= 10
+BEGIN
+    INSERT INTO paquete (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
+    VALUES (ABS(CHECKSUM(NEWID())) % 60 + 1, '50x40x30', (ABS(CHECKSUM(NEWID())) % 150000) + 500, 2, 9, 10);
+
+    SET @id_paquete2 = SCOPE_IDENTITY();
+
+    INSERT INTO envio (fecha_registro, id_paquete, id_ruta, id_vehiculo, id_empleado_responsable, id_estado_actual)
+    VALUES (GETDATE(), @id_paquete2, 3, 4, 5, 2);
+
+    SET @j += 1;
+END;
+GO
+
+-- BACKUP DEL LOG DE TRANSACCIONES #2
+BACKUP LOG PaqueExpress
+TO DISK = 'C:\Backup\PaqueExpress_Log2.trn'
+WITH NAME = 'PaqueExpress - Backup de Log 2',
+     CHECKSUM,
+     STATS = 10;
+GO
+
+-- Registrar la hora del backup
+DECLARE @HoraInicioBackupLog2 DATETIME2 = SYSDATETIME();
+SELECT @HoraInicioBackupLog2 AS Hora_BackupLog2;
+```
+![Backup_Log2](Backup_Restore/Assets-Backup/4_backup_log2.png)
+
+Simulamos un fallo (borrado de la base de datos)
+```sql
+ALTER DATABASE PaqueExpress SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+GO
+
+USE master;
+GO
+DROP DATABASE PaqueExpress;
+GO
+```
+
+Restauramos la base de datos con Backup Full y Log1
+```sql
+RESTORE DATABASE PaqueExpress
+FROM DISK = 'C:\Backup\PaqueExpress_FULL.bak'
+WITH NORECOVERY, REPLACE, STATS = 10;
+
+RESTORE LOG PaqueExpress
+FROM DISK = 'C:\Backup\PaqueExpress_Log1.trn'
+WITH RECOVERY, STATS = 10;
+GO
+```
+![Primer_Restore](Backup_Restore/Assets-Backup/5_restore_full_log1.png)
+
+Verificamos cantidad de registros en Paquete y Envio luego del primer restore
+```sql
+USE PaqueExpress;
+GO
+SELECT COUNT(*) AS Paquetes_Restaurados_A FROM paquete;
+SELECT COUNT(*) AS Envios_Restaurados_A FROM envio;
+GO
+```
+![Verificacion_Primer_Restore](Backup_Restore/Assets-Backup/6_verificacion_primer_restore.png)
+
+Restauramos la base de datos con Backup Full y ambos Logs
+```sql
+USE master;
+GO
+ALTER DATABASE PaqueExpress SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+GO
+
+RESTORE DATABASE PaqueExpress
+FROM DISK = 'C:\Backup\PaqueExpress_FULL.bak'
+WITH NORECOVERY, REPLACE, STATS = 10;
+
+RESTORE LOG PaqueExpress
+FROM DISK = 'C:\Backup\PaqueExpress_Log1.trn'
+WITH NORECOVERY, STATS = 10;
+
+RESTORE LOG PaqueExpress
+FROM DISK = 'C:\Backup\PaqueExpress_Log2.trn'
+WITH RECOVERY, STATS = 10;
+
+ALTER DATABASE PaqueExpress SET MULTI_USER;
+GO
+```
+![Segundo_Restore](Backup_Restore/Assets-Backup/7_restore_full_log1_log2.png)
+
+Verificamos cantidad de registros en Paquete y Envio luego del segundo restore
+```sql
+USE PaqueExpress;
+GO
+SELECT COUNT(*) AS Paquetes_Restaurados_B FROM paquete;
+SELECT COUNT(*) AS Envios_Restaurados_B FROM envio;
+GO
+```
+![Verificacion_Segundo_Restore](Backup_Restore/Assets-Backup/8_verificacion_segundo_restore.png)
+
+### Política de Backup para el sistema PaqueExpress**
+
+#### Objetivo
+Garantizar la integridad, disponibilidad y recuperación de la información del sistema de envíos *PaqueExpress*, permitiendo restaurar el servicio ante fallos con mínima pérdida de datos.
+
+#### Modelo de recuperación
+FULL (permite backup en línea y restauración punto en el tiempo mediante archivos de log).
+
+#### Tipos de respaldo
+
+#### 1. Backup completo (FULL)
+- **Frecuencia:** Diario, a las **00:00 h**.  
+- **Ubicación:** `C:\Backups\PaqueExpress_FULL.bak`  
+- **Retención:** 7 días.  
+- **Propósito:** Generar un punto base para restauraciones completas.
+
+#### 2. Backup del log de transacciones (LOG)
+- **Frecuencia:** Cada **30 minutos** en horario operativo.  
+- **Archivos:** `PaqueExpress_LOG.trn`  
+- **Retención:** 24–48 horas.  
+- **Propósito:** Permitir restauración casi exacta al momento del fallo.
+
+#### Verificación y mantenimiento
+- Registrar horarios y resultados de cada ejecución.  
+- Supervisar espacio disponible en la carpeta de backups.  
+- Mantener las copias en un repositorio seguro dentro de la organización.
+
+#### Procedimiento ante fallos
+1. Restaurar el último **backup FULL** usando `NORECOVERY`.  
+2. Aplicar los backups **LOG** en orden cronológico.  
+3. Finalizar con `RECOVERY` para habilitar la base.  
+4. Validar consistencia de datos y reactivar el acceso a usuarios.
+
+---
 
 ### Diagrama relacional
 
@@ -714,10 +1041,6 @@ WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_act
 ### Diccionario de datos
 
 Acceso al documento [PDF](doc/DiccionarioDeDatos.pdf) del diccionario de datos.
-
-## TEMA 3:  Manejo de transacciones y transacciones anidadas
-
-## TEMA 4:  Backup y restore. Backup en línea
 
 ## CAPÍTULO V: CONCLUSIONES
 
@@ -734,22 +1057,20 @@ Uso de índice agrupado compuesto e índice no agrupado con INCLUDE: Ambos indic
 #### Manejo de transacciones y transacciones anidadas
 
 #### Backup y restore. Backup en línea
+La implementación de una política de backup y restore en el sistema de envíos PaqueExpress mostró lo importante que es contar con mecanismos confiables para proteger y recuperar datos en una base de datos transaccional. Gracias al modelo de recuperación FULL, junto con respaldos completos y logs de transacciones, se pudo asegurar la trazabilidad, integridad y disponibilidad de la información incluso frente a un de fallo total del sistema.
+
+El procedimiento realizado evidenció que un plan de copias de seguridad bien organizado no solo permite recuperar la base de datos sin pérdidas relevantes, sino que también garantiza la continuidad operativa de la empresa. En conjunto, este trabajo destaca el valor de los procesos de respaldo y restauración como piezas clave en la administración de bases de datos.
 
 ## BIBLIOGRAFÍA DE CONSULTA
 Microsoft, Stored Procedures (Database Engine), Microsoft Docs, 2023. [Online]. Available: https://learn.microsoft.com/en-us/sql/relational-databases/stored-procedures/stored-procedures-database-engine
-
 Microsoft, CREATE PROCEDURE (Transact-SQL), Microsoft Docs, 2023. [Online]. Available: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-procedure-transact-sql
-
 Oracle, Advantages of Stored Procedures, Oracle Documentation, 2023. [Online]. Available: https://docs.oracle.com
-
 Wise Owl Training, Calculating Age in SQL Server (DATEDIFF + DATEADD Recommended Approach), WiseOwl.co.uk, 2023. [Online]. Available: https://www.wiseowl.co.uk
-
 SQLServerCentral Community, Best Practices and Debates on Stored Procedures and UDFs Performance, SQLServerCentral, 2023. [Online]. Available: https://www.sqlservercentral.com
-
 Stack Overflow Contributors, Discussions on Stored Procedures vs UDFs and Performance, StackOverflow, 2023. [Online]. Available: https://stackoverflow.com
 
 [1] https://learn.microsoft.com/es-es/sql/relational-databases/indexes/clustered-and-nonclustered-indexes-described?view=sql-server-ver17
 [2] https://blog.damavis.com/optimizacion-de-indices-en-bases-de-datos-relacionales/
 
-
-
+Microsoft Learn, “Backup overview (SQL Server)” [Online]. Available: https://learn.microsoft.com/en-us/sql/relational-databases/backup-restore/backup-overview-sql-server?view=sql-server-ver17.
+J. Gavin, “Restore database SQL Server options and examples” MSSQLTips, [Online]. Available: https://www.mssqltips.com/sqlservertip/6893/restore-database-sql-server-options-examples/.
