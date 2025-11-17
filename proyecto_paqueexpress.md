@@ -14,39 +14,56 @@
 **Año**: 2025
 
 ---
-
-# ÍNDICE
+## ÍNDICE
 
 - [Proyecto de Estudio](#proyecto-de-estudio)  
 - [PRESENTACIÓN - PaqueExpress](#presentación---paqueexpress)
 
-## CAPÍTULO I: INTRODUCCIÓN
-- [Caso de estudio](#caso-de-estudio)  
-- [Definición o planteamiento del problema](#definición-o-planteamiento-del-problema)  
-- [Objetivo del Trabajo Práctico](#objetivo-del-trabajo-práctico)  
-- [Objetivo Generales](#objetivo-generales)  
-- [Objetivos Específicos](#objetivos-específicos)
+---
 
-## CAPÍTULO II: MARCO CONCEPTUAL O REFERENCIAL
-- [TEMA 1: Procedimientos almacenados y funciones UDF](#tema-1-procedimientos-almacenados-y-las-funciones-definidas-por-el-usuario)  
-- [TEMA 2: Optimización de consultas a través de índices](#tema-2-optimización-de-consultas-a-través-de-índices)  
-- [TEMA 3: Manejo de transacciones y transacciones anidadas](#tema-3--manejo-de-transacciones-y-transacciones-anidadas)  
-- [TEMA 4: Backup y restore. Backup en línea](#tema-4--backup-y-restore-backup-en-línea)
+## CAPÍTULO I: INTRODUCCIÓN
+
+- [Caso de estudio](#caso-de-estudio)  
+- [Definición o planteamiento del problema](#definicion-o-planteamiento-del-problema)  
+- [Objetivo del Trabajo Práctico](#objetivo-del-trabajo-practico)  
+- [Objetivo Generales](#objetivo-generales)  
+- [Objetivos Específicos](#objetivos-especificos)  
+
+---
+
+## CAPÍTULO II: MARCO TEÓRICO
+
+- [TEMA 1: Procedimientos almacenados y las funciones definidas por el Usuario](#tema-1-procedimientos-almacenados-y-las-funciones-definidas-por-el-usuario)  
+- [TEMA 2: Optimización de Consultas a través de Índices](#tema-2-optimizacion-de-consultas-a-traves-de-indices)  
+- [TEMA 3: Manejo de transacciones y transacciones anidadas](#tema-3-manejo-de-transacciones-y-transacciones-anidadas)  
+- [TEMA 4: Backup y restore. Backup en línea](#tema-4-backup-y-restore-backup-en-linea)
+
+---
 
 ## CAPÍTULO III: METODOLOGÍA SEGUIDA
-- [Metodología](#capítulo-iii-metodología-seguida)
 
-## CAPÍTULO IV: DESARROLLO DEL TEMA / PRESENTACIÓN DE RESULTADOS
-- [TEMA 1: Procedimientos y Funciones](#tema-1-procedimientos-almacenados-y-las-funciones-definidas-por-el-usuario-1)  
-- [TEMA 2: Optimización de consultas con índices](#tema-2-optimización-de-consultas-a-traves-de-índices)  
-- [TEMA 3: Manejo de transacciones y transacciones anidadas](#tema-3--manejo-de-transacciones-y-transacciones-anidadas-1)  
-- [TEMA 4: Backup y restore. Backup en línea](#tema-4--backup-y-restore-backup-en-línea-1)
+- [CAPÍTULO III: METODOLOGÍA SEGUIDA](#capitulo-iii-metodologia-seguida)
+
+---
+
+## CAPÍTULO IV: DESARROLLO Y RESULTADOS
+
+- [TEMA 1 - Desarrollo y Resultados](#tema-1-procedimientos-almacenados-y-las-funciones-definidas-por-el-usuario-1)  
+- [TEMA 2 - Desarrollo y Resultados](#tema-2-optimizacion-de-consultas-a-traves-de-indices)  
+- [TEMA 3 - Desarrollo y Resultados](#tema-3-manejo-de-transacciones-y-transacciones-anidadas-1)  
+- [TEMA 4 - Desarrollo y Resultados](#tema-4-backup-y-restore-backup-en-linea-1)
+
+---
 
 ## CAPÍTULO V: CONCLUSIONES
-- [Conclusiones](#capítulo-v-conclusiones)
+
+- [Conclusiones](#capitulo-v-conclusiones)
+
+---
 
 ## CAPÍTULO VI: BIBLIOGRAFÍA
-- [Bibliografía](#capítulo-vi-bibliografía)
+
+- [Bibliografía](#capitulo-vi-bibliografia)
 
 ---
 
@@ -302,9 +319,34 @@ SQL Server maneja internamente los **bloqueos** y las **transacciones activas** 
 En SQL Server, el **online restore** o **piecemeal restore** permite restaurar partes específicas de la base de datos (como archivos o *filegroups*) mientras el resto del sistema permanece disponible.  
 Esta característica es especialmente valiosa en bases de datos de **gran tamaño**, donde un restore completo implicaría **tiempos de inactividad prolongados**.
 
----
 
 ## CAPÍTULO III: METODOLOGÍA SEGUIDA
+Este capítulo describe el proceso seguido para el desarrollo del trabajo, las actividades realizadas y las herramientas empleadas.
+
+### **a. Descripción de cómo se realizó el Trabajo Práctico**
+
+El trabajo se desarrolló de manera progresiva, comenzando por el análisis de los requerimientos del sistema *PaqueExpress* y la definición de la estructura de datos necesaria para dar soporte a sus operaciones. Inicialmente se construyó el diagrama entidad–relación y, a partir de él, se implementaron las tablas y relaciones mediante scripts SQL.
+
+Luego se avanzó en los cuatro ejes principales del desarrollo.
+En primer lugar, se implementaron **procedimientos almacenados y funciones UDF**, definiendo la lógica de operaciones como alta de paquetes, registro de envíos y consultas específicas. Esto implicó pruebas repetidas, ajustes de parámetros y validación del comportamiento esperado.
+
+Posteriormente, se trabajó en la **optimización de consultas mediante índices**, evaluando las tablas con mayor carga de lectura –especialmente *envío*– y creando índices adecuados para mejorar el rendimiento. Este proceso requirió análisis de tiempos de respuesta y verificación de los planes de ejecución.
+
+El siguiente paso fue la implementación de **transacciones**, incluyendo casos con transacciones anidadas, garantizando la integridad de la información en operaciones que involucran múltiples tablas. Se realizaron pruebas con errores intencionales para asegurar que los mecanismos de rollback funcionaran correctamente.
+
+Finalmente, se desarrollaron tareas de **backup y restore**, junto con pruebas de copias en línea para asegurar la continuidad operativa del sistema. Esto permitió validar los procedimientos de recuperación ante fallos y garantizar la disponibilidad de los datos.
+
+En cada etapa surgieron ajustes y correcciones, que fueron resueltos mediante iteración del diseño, consulta de documentación técnica y comparación de alternativas. Una vez completados los desarrollos, se integró toda la información en el informe final.
+
+### **b. Herramientas (Instrumentos y procedimientos)**
+
+Para llevar a cabo el proyecto se utilizaron diversas herramientas. La creación del modelo, los scripts SQL, los procedimientos, índices, transacciones y pruebas de backup se realizaron en **SQL Server Management Studio (SSMS)**, que permitió visualizar la base de datos, ejecutar consultas y validar cada componente del sistema.
+
+Además, se empleó **GitHub** como sistema de control de versiones, organizando el trabajo mediante ramas separadas para los distintos temas, lo que facilitó el seguimiento de cambios y la integración progresiva de cada módulo.
+
+La búsqueda de información técnica y la resolución de dudas se realizó mediante **recursos en línea y documentación especializada**, lo que permitió mejorar la calidad de las decisiones tomadas en el diseño y la implementación.
+
+En conjunto, estas herramientas y procedimientos permitieron un desarrollo ordenado, controlado y verificable, garantizando la correcta implementación de cada uno de los temas del trabajo.
 
 ## CAPÍTULO IV: DESARROLLO DEL TEMA / PRESENTACIÓN DE RESULTADOS
 
