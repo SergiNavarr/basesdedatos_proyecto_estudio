@@ -125,6 +125,63 @@ El desarrollo del sistema PaqueExpress requiere una base sólida de conceptos qu
 
 - Rendimiento en UDFs: funciones escalares (particularmente las definidas por usuario que no son inline table-valued) pueden ser evaluadas por fila y penalizar rendimiento; para operaciones masivas conviene funciones en línea o SPs set-based. 
 
+### Diferencias principales orientadas a seguridad y control
+
+| Característica                                   | Procedimientos almacenados (SP) | Funciones almacenadas (UDF)       |
+|--------------------------------------------------|----------------------------------|------------------------------------|
+| ¿Modifican datos (INSERT/UPDATE/DELETE)?         | Sí                               | No (prohibido)                     |
+| ¿Devuelven valores?                              | Opcional                         | Sí (valor o tabla)                 |
+| ¿Permiten transacciones?                         | Sí                               | No                                 |
+| ¿Manejo TRY/CATCH?                               | Sí                               | No                                 |
+| ¿Control de permisos granular?                   | Muy alto                         | Limitado                           |
+| ¿Lógica compleja?                                | Ideal                            | Solo lógica sin efectos            |
+| ¿Se ejecutan con EXEC?                           | Sí                               | No (se usan en SELECT)             |
+
+**Conclusión de seguridad:**  
+Los SP permiten aislar y proteger el acceso a las tablas.  
+Un usuario puede tener permiso para ejecutar un SP sin tener acceso directo a las tablas internas.  
+Las funciones no ofrecen este “blindaje”, porque solo calculan valores y se ejecutan dentro de consultas.
+
+### ¿Cuándo conviene usar procedimientos almacenados?
+
+Los SP deben usarse cuando:
+
+- **Se modifican datos (CRUD):** insertar, actualizar, eliminar registros.  
+- **Se necesita seguridad:** evitar accesos directos a las tablas.  
+- **Es necesaria una transacción:** operaciones que afectan múltiples tablas.  
+- **Existe lógica de negocio compleja:** validaciones, reglas, auditorías.  
+- **Se desea centralizar reglas en el servidor:** evitar duplicación en la aplicación.
+
+**Ejemplos prácticos en PaqueExpress:**
+- Insertar cliente, paquete o envío.  
+- Registrar el historial de movimientos de un envío.  
+- Actualizar direcciones o datos del cliente.  
+- Eliminar lógicamente registros.
+
+### ¿Cuándo conviene usar funciones almacenadas?
+
+Las funciones se usan para **cálculos puros**, retornos de valores y lógica reutilizable sin modificar datos.
+
+Usos ideales:
+
+- **Cálculos matemáticos o lógicos:**  
+  - `fn_PesoVolumetrico`  
+  - `fn_TiempoContratacion`  
+  - `fn_PaqueteEsAltoRiesgo`
+
+- **Funciones que se usan dentro de SELECT o informes.**
+
+- **Reglas repetidas que deben ser consistentes en todo el sistema.**
+
+- **Funciones que devuelven tablas (TVF) para consultas reutilizables.**
+
+Ejemplo típico en PaqueExpress:
+```sql
+SELECT 
+    p.id_paquete,
+    dbo.fn_PesoVolumetrico(alto_cm, ancho_cm, largo_cm) AS peso_volumetrico
+FROM paquete p;
+```
 
 ## TEMA 2: Optimización de Consultas a través de Índices
 
@@ -474,6 +531,70 @@ SELECT id_cliente, nombre, email FROM cliente WHERE id_cliente = 56;
 ```
 
 ![Resultado_SP_Actualizar_Cliente](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/sp2_ActualizarCliente.png)
+
+#### SP para eliminar un cliente (logicamente)
+```sql
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarClienteLogico
+    @IdCliente INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE cliente
+    SET activo = 0
+    WHERE id_cliente = @IdCliente;
+END
+GO
+```
+
+Ejemplo:
+```sql
+EXEC dbo.sp_EliminarClienteLogico @IdCliente=10;
+SELECT nombre AS Cliente,  FROM cliente WHERE @IdCliente = 10;
+```
+
+- Resultado de la eliminacion logica.
+
+![Resultado_SP_Eliminar_Cliente_Logicamente](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/sp_EliminacionLogica.png)
+
+- Lote de Pruebas luego de la eliminacion logica.
+
+![Lote_De_Datos_Luego_De_Eliminar Logicamente](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/loteDeClientesLuegoDeEliminarLogicamente.png)
+
+
+#### SP para eliminar un cliente (fisicamente y no recomendado)
+```sql
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarClienteFisico
+    @IdCliente INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM cliente
+    WHERE id_cliente = @IdCliente;
+END
+GO
+```
+
+Ejemplo:
+```sql
+EXEC dbo.sp_EliminarClienteFisico @IdCliente=1051;
+SELECT nombre AS Cliente FROM cliente WHERE id_cliente = 1051;
+```
+
+- Resultado de la eliminacion fisica.
+
+![Resultado_SP_Eliminar_Cliente_Fisicamente](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/sp_EliminacionFisica.png)
+
+- El Lote de datos antes de eliminar fisicamente.
+
+![Lote_De_Datos_Antes_De_Eliminar_Fisicamenete](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/loteDeClientesAntesDeEliminar.png)
+
+- El Lote de datos luego de eliminar fisicamente.
+
+![Lote_De_Datos_Luego_De_Eliminar_Fisicamenete](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/loteDeClientesLuegoDeEliminar.png)
+
+
 
 #### SP para paquete (insert)
 ```sql
