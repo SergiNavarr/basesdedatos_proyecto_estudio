@@ -775,6 +775,48 @@ SELECT dbo.fn_PaqueteEsAltoRiesgo(150000) AS EsAltoRiesgo;
 
 ![Resultado_FN_Paquete_Alto_Riesgo](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/fn3_PaqueteEsAltoRiesgo.png)
 
+- Lote de pruebas usando Insert solo:
+
+```sql
+INSERT INTO cliente (nombre, apellido, dni, email, id_direccion)
+VALUES 
+('Jesus', 'Lopez', '10111222', 'j.lopez@example.com', 1),
+('Maria', 'Nuñez', '22113344', 'maria@gmail.com', 2),
+('Pedro', 'Sosa', '55443322', 'pedro.sosa@example.com', 1),
+('Laura', 'Ojeda', '99887766', 'laura@gmail.com', 2),
+('Roberto', 'Franco', '33445577', 'r.franco@example.com', 1),
+('Silvia', 'Martel', '66778899', 'silvi@gmail.com', 2),
+('Enzo', 'Villalba', '12349876', 'enz@gmail.com', 1),
+('Marina', 'Quiroz', '12998877', 'marina.q@example.com', 2),
+('Sofia', 'Diaz', '55667788', 'sofia@gmail.com', 1),
+('Daniel', 'Mansilla', '88776655', 'd.mansilla@example.com', 2);
+
+```
+
+- Resultado
+![Resultado_Insertar_Clientes_Con_Insert](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/insetandoClientesConInsert.png)
+
+- Lote de pruebas usando sp_InsertCliente:
+
+```sql
+DECLARE @NewId INT;
+
+EXEC dbo.sp_InsertCliente 'Tomas','Rios','22334455','t.rios@example.com',1,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Lucia','Benitez','44332211','l.rios@example.com',2,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Martina','Lagos','11224466','m.lagos@example.com',1,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Jorge','Almada','66554433','j.rios@example.com',2,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Elena','Ortiz','77889900','e.ortiz@example.com',1,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Dario','Romero','10998877','d.rios@example.com',2,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Camila','Soria','55440099','c.soria@example.com',1,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Rocio','Aguirre','90909090','r.rios@example.com',2,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Julian','Herrera','33440022','j.herrera@example.com',1,@NewId OUTPUT;
+EXEC dbo.sp_InsertCliente 'Nadia','Torres','22002200','n.rios@example.com',2,@NewId OUTPUT;
+
+```
+
+- Resultado
+![Resultado_Insertar_Clientes_Con_Insert](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/insertandoClientesConSP.png)
+
 
 ## Tema 2: Optimización de Consultas a traves de Índices
 
