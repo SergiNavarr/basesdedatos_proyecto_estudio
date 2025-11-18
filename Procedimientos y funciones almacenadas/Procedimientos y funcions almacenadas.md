@@ -414,16 +414,16 @@ Las funciones se usan para **cálculos puros**, retornos de valores y lógica re
 
 Usos ideales:
 
-- ✔ **Cálculos matemáticos o lógicos:**  
+- **Cálculos matemáticos o lógicos:**  
   - `fn_PesoVolumetrico`  
   - `fn_TiempoContratacion`  
   - `fn_PaqueteEsAltoRiesgo`
 
-- ✔ **Funciones que se usan dentro de SELECT o informes.**
+- **Funciones que se usan dentro de SELECT o informes.**
 
-- ✔ **Reglas repetidas que deben ser consistentes en todo el sistema.**
+- **Reglas repetidas que deben ser consistentes en todo el sistema.**
 
-- ✔ **Funciones que devuelven tablas (TVF) para consultas reutilizables.**
+- **Funciones que devuelven tablas (TVF) para consultas reutilizables.**
 
 Ejemplo típico en PaqueExpress:
 ```sql
@@ -431,7 +431,7 @@ SELECT
     p.id_paquete,
     dbo.fn_PesoVolumetrico(alto_cm, ancho_cm, largo_cm) AS peso_volumetrico
 FROM paquete p;
-
+```
 ## 7. Comparación: operaciones directas vs uso de procedimientos/funciones
 
 ### 7.1. Ventajas de usar procedimientos y funciones
@@ -474,4 +474,5 @@ WiseOwl (tutorial) — Calculating age in SQL Server (DATEDIFF + DATEADD recomme
 wiseowl.co.uk
 
 SQLServerCentral / StackOverflow — buenas prácticas y debates sobre SPs/UDFs y rendimiento. 
+
 
