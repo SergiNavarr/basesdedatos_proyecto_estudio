@@ -105,7 +105,45 @@ BEGIN
 END
 GO
 ```
+### 4.3 SP para eliminar logicamente y eliminar fisicamente(no recomendable)
+-***Nota: agrego esto que es para modificar la tabla cliente y añadirle una columna que sea si esta activo o no, ya que nuestro modelo no tiene eso(porque se nos paso)***
+### 4.3.0 Script para agregar columna 'activo' a Cliente.
+```sql
+ALTER TABLE cliente
+ADD activo BIT NOT NULL DEFAULT 1;
+GO
+```
+### 4.3.1 sp_EliminarClienteLogico
+
+```sql
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarClienteLogico
+    @IdCliente INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE cliente
+    SET activo = 0
+    WHERE id_cliente = @IdCliente;
+END
+GO
+```
+### 4.3.2 sp_EliminarClienteFisico
+
+```sql
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarClienteFisico
+    @IdCliente INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM cliente
+    WHERE id_cliente = @IdCliente;
+END
+GO
+```
 ### 4.3. SP para paquete (insert)
+
 ```sql
 CREATE OR ALTER PROCEDURE dbo.sp_InsertPaquete
     @Peso DECIMAL(10,2),
@@ -297,12 +335,19 @@ SELECT 'Paquete creado' AS Info, @NewId AS IdNuevo;
 -- Actualizar email de cliente
 
 ```sql
-EXEC dbo.sp_UpdateCliente @IdCliente=1, @Email='nuevo.email@example.com';
+EXEC dbo.sp_UpdateCliente
+  @IdCliente=1,
+  @Email='nuevo.email@example.com';
 ```
 
--- Borrar cliente (si no tiene referencias)
+-- Borrar cliente logicamente
 ```sql
-EXEC dbo.sp_DeleteCliente @IdCliente=3;
+EXEC dbo.sp_EliminarClienteLogico @IdCliente=10;
+```
+
+-- Borrar cliente fisicamente
+```sql
+EXEC dbo.sp_EliminarClienteFisico @IdCliente=10;
 ```
 
 ### 6.4 Calcular el peso facturable del paquete
@@ -318,6 +363,74 @@ SELECT
     END AS peso_facturable                                    -- Peso final que se utiliza para cobrar
 FROM paquete;
 ```
+
+## 7. Comparación: Procedimientos almacenados (SP) vs Funciones almacenadas (UDF)
+
+En este trabajo no se busca medir tiempos de ejecución ni comparar rendimiento en milisegundos.  
+El objetivo es analizar **diferencias conceptuales**, **seguridad**, y **cuándo corresponde usar cada uno** dentro del proyecto PaqueExpress.
+
+---
+
+### 7.1 Diferencias principales orientadas a seguridad y control
+
+| Característica                                   | Procedimientos almacenados (SP) | Funciones almacenadas (UDF)       |
+|--------------------------------------------------|----------------------------------|------------------------------------|
+| ¿Modifican datos (INSERT/UPDATE/DELETE)?         | Sí                               | No (prohibido)                     |
+| ¿Devuelven valores?                              | Opcional                         | Sí (valor o tabla)                 |
+| ¿Permiten transacciones?                         | Sí                               | No                                 |
+| ¿Manejo TRY/CATCH?                               | Sí                               | No                                 |
+| ¿Control de permisos granular?                   | Muy alto                         | Limitado                           |
+| ¿Lógica compleja?                                | Ideal                            | Solo lógica sin efectos            |
+| ¿Se ejecutan con EXEC?                           | Sí                               | No (se usan en SELECT)             |
+
+**Conclusión de seguridad:**  
+Los SP permiten aislar y proteger el acceso a las tablas.  
+Un usuario puede tener permiso para ejecutar un SP sin tener acceso directo a las tablas internas.  
+Las funciones no ofrecen este “blindaje”, porque solo calculan valores y se ejecutan dentro de consultas.
+
+---
+
+### 7.2 ¿Cuándo conviene usar procedimientos almacenados?
+
+Los SP deben usarse cuando:
+
+- **Se modifican datos (CRUD):** insertar, actualizar, eliminar registros.  
+- **Se necesita seguridad:** evitar accesos directos a las tablas.  
+- **Es necesaria una transacción:** operaciones que afectan múltiples tablas.  
+- **Existe lógica de negocio compleja:** validaciones, reglas, auditorías.  
+- **Se desea centralizar reglas en el servidor:** evitar duplicación en la aplicación.
+
+**Ejemplos prácticos en PaqueExpress:**
+- Insertar cliente, paquete o envío.  
+- Registrar el historial de movimientos de un envío.  
+- Actualizar direcciones o datos del cliente.  
+- Eliminar lógicamente registros.
+
+---
+
+### 7.3 ¿Cuándo conviene usar funciones almacenadas?
+
+Las funciones se usan para **cálculos puros**, retornos de valores y lógica reutilizable sin modificar datos.
+
+Usos ideales:
+
+- ✔ **Cálculos matemáticos o lógicos:**  
+  - `fn_PesoVolumetrico`  
+  - `fn_TiempoContratacion`  
+  - `fn_PaqueteEsAltoRiesgo`
+
+- ✔ **Funciones que se usan dentro de SELECT o informes.**
+
+- ✔ **Reglas repetidas que deben ser consistentes en todo el sistema.**
+
+- ✔ **Funciones que devuelven tablas (TVF) para consultas reutilizables.**
+
+Ejemplo típico en PaqueExpress:
+```sql
+SELECT 
+    p.id_paquete,
+    dbo.fn_PesoVolumetrico(alto_cm, ancho_cm, largo_cm) AS peso_volumetrico
+FROM paquete p;
 
 ## 7. Comparación: operaciones directas vs uso de procedimientos/funciones
 
@@ -361,3 +474,4 @@ WiseOwl (tutorial) — Calculating age in SQL Server (DATEDIFF + DATEADD recomme
 wiseowl.co.uk
 
 SQLServerCentral / StackOverflow — buenas prácticas y debates sobre SPs/UDFs y rendimiento. 
+
