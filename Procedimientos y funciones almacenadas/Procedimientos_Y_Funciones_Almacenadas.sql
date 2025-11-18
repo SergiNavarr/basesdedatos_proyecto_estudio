@@ -1,8 +1,9 @@
 ﻿---------------------------------------------------------
---  STORED PROCEDURES
+--  Procedimientos Almacenados (STORED PROCEDURES)
 ---------------------------------------------------------
 
 -- 1️ Insert Cliente
+
 CREATE OR ALTER PROCEDURE dbo.sp_InsertCliente
     @Nombre VARCHAR(100),
     @Apellido VARCHAR(100),
@@ -28,6 +29,7 @@ END
 GO
 
 -- 2️ Update Cliente
+        
 CREATE OR ALTER PROCEDURE dbo.sp_UpdateCliente
     @IdCliente INT,
     @Nombre VARCHAR(100) = NULL,
@@ -53,8 +55,38 @@ BEGIN
     END CATCH
 END
 GO
+-- 3.0 Script para agregar columna 'activo' a Cliente.
+        
+ALTER TABLE cliente
+ADD activo BIT NOT NULL DEFAULT 1;
+GO
+--- 3.1 Eliminar Cliente Logico
+    
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarClienteLogico
+    @IdCliente INT
+AS
+BEGIN
+    SET NOCOUNT ON;
 
--- 3 Insert Paquete
+    UPDATE cliente
+    SET activo = 0
+    WHERE id_cliente = @IdCliente;
+END
+GO
+--- 3.2 Eliminar Cliente Fisico
+    
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarClienteFisico
+    @IdCliente INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM cliente
+    WHERE id_cliente = @IdCliente;
+END
+GO
+
+-- 4 Insert Paquete
 CREATE OR ALTER PROCEDURE dbo.sp_InsertPaquete
     @Peso DECIMAL(10,2),
     @Dimensiones VARCHAR(50) = NULL,
@@ -82,7 +114,7 @@ BEGIN
 END
 GO
 
--- 4 Insert Envío
+-- 5 Insert Envío
 CREATE OR ALTER PROCEDURE dbo.sp_InsertEnvio
     @IdPaquete INT,
     @IdRuta INT,
@@ -175,17 +207,25 @@ DECLARE @IdCli INT;
 EXEC sp_InsertCliente 'Juan','Miño','1111111','juancitoMiño@outlook.com',1,@IdCli OUTPUT;
 SELECT @IdCli AS Id_Cliente_Nuevo;
 
---   Actualizar Cliente
+-- Actualizar Cliente
 
 EXEC sp_UpdateCliente @IdCliente=56, @Email ='juancitu5@email.com';
 SELECT id_cliente, nombre, email FROM cliente WHERE id_cliente = 56;
 
---   Insertar Paquete
+-- Borrar cliente logicamente
+
+EXEC dbo.sp_EliminarClienteLogico @IdCliente=10;
+
+-- Borrar cliente fisicamente
+
+EXEC dbo.sp_EliminarClienteFisico @IdCliente=10;
+
+-- Insertar Paquete
 DECLARE @IdPaq INT;
 EXEC sp_InsertPaquete 2.5,'30x20x10',15000,2,1,2,@IdPaq OUTPUT;
 SELECT @IdPaq AS NuevoPaquete;
 
---   Insertar Envío
+-- Insertar Envío
 DECLARE @IdEnv INT;
 EXEC sp_InsertEnvio
      @IdPaquete=1,
