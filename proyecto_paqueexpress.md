@@ -13,13 +13,11 @@
 
 **Año**: 2025
 
----
 ## ÍNDICE
 
 - [Proyecto de Estudio](#proyecto-de-estudio)  
 - [PRESENTACIÓN - PaqueExpress](#presentación---paqueexpress)
 
----
 
 ## CAPÍTULO I: INTRODUCCIÓN
 
@@ -29,7 +27,6 @@
 - [Objetivo Generales](#objetivo-generales)  
 - [Objetivos Específicos](#objetivos-especificos)  
 
----
 
 ## CAPÍTULO II: MARCO TEÓRICO
 
@@ -38,13 +35,11 @@
 - [TEMA 3: Manejo de transacciones y transacciones anidadas](#tema-3-manejo-de-transacciones-y-transacciones-anidadas)  
 - [TEMA 4: Backup y restore. Backup en línea](#tema-4-backup-y-restore-backup-en-linea)
 
----
 
 ## CAPÍTULO III: METODOLOGÍA SEGUIDA
 
 - [CAPÍTULO III: METODOLOGÍA SEGUIDA](#capitulo-iii-metodologia-seguida)
 
----
 
 ## CAPÍTULO IV: DESARROLLO Y RESULTADOS
 
@@ -53,19 +48,16 @@
 - [TEMA 3 - Desarrollo y Resultados](#tema-3-manejo-de-transacciones-y-transacciones-anidadas-1)  
 - [TEMA 4 - Desarrollo y Resultados](#tema-4-backup-y-restore-backup-en-linea-1)
 
----
 
 ## CAPÍTULO V: CONCLUSIONES
 
 - [Conclusiones](#capitulo-v-conclusiones)
 
----
 
 ## CAPÍTULO VI: BIBLIOGRAFÍA
 
 - [Bibliografía](#capitulo-vi-bibliografia)
 
----
 
 ## CAPÍTULO I: INTRODUCCIÓN
 
@@ -133,7 +125,6 @@ El desarrollo del sistema PaqueExpress requiere una base sólida de conceptos qu
 
 - Rendimiento en UDFs: funciones escalares (particularmente las definidas por usuario que no son inline table-valued) pueden ser evaluadas por fila y penalizar rendimiento; para operaciones masivas conviene funciones en línea o SPs set-based. 
 
----
 
 ## TEMA 2: Optimización de Consultas a través de Índices
 
@@ -663,7 +654,6 @@ SELECT dbo.fn_PaqueteEsAltoRiesgo(150000) AS EsAltoRiesgo;
 
 ![Resultado_FN_Paquete_Alto_Riesgo](Procedimientos%20y%20funciones%20almacenadas/Capturas%20de%20prueba/fn3_PaqueteEsAltoRiesgo.png)
 
----
 
 ## Tema 2: Optimización de Consultas a traves de Índices
 
@@ -931,11 +921,11 @@ WHERE e.fecha_registro BETWEEN '2023-01-01' AND '2024-12-31' AND e.id_estado_act
 
 Ambos indices, al incluir todas las columnas claves de las consultas (fecha, estado y ruta), mejoraron los tiempos de ejecución de forma significativa, especialmente en las consultas más complejas. Es decir las que involucran la totalidad de las columnas ya que justamente estos índices estan "preparados" para consultas que involucran estas columnas. Ademas, el indice no agrupado con include resulto más eficiente en consultas mas específicas, logrando una mayor reduccion de lecturas logicas.
 
----
 
 ## TEMA 3:  Manejo de transacciones y transacciones anidadas
 
-Iniciamos verificando la cantidad de registros en las tablas seleccionadas para nuestra transacción, en este caso ruta y envío
+Iniciamos verificando la cantidad de registros en las tablas seleccionadas para nuestra transacción, en este caso ruta y envío.
+
 ![Estado_inicial_tablas_ruta_y_envio](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_inicial_tablas_ruta_y_envio.png)
 
 Declaramos la transacción
@@ -1233,7 +1223,6 @@ FULL (permite backup en línea y restauración punto en el tiempo mediante archi
 3. Finalizar con `RECOVERY` para habilitar la base.  
 4. Validar consistencia de datos y reactivar el acceso a usuarios.
 
----
 
 ### Diagrama relacional
 
