@@ -1362,6 +1362,20 @@ Ahora viendo el estado de las tablas podemos observar que solo se insertaron fil
 
 ![Estado_tablas_post_transaccion_rollback_parcial](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_tablas_post_transaccion_rollback_parcial.png)
 
+Conclusiones sobre el uso de transacciones anidadas:
+
+Durante las pruebas realizadas con transacciones anidadas se ejecutó un proceso compuesto por dos niveles:
+una transacción principal, encargada de insertar una dirección y un cliente,
+una transacción interna simulada, que insertaba un paquete, un envío y su historial asociado.
+Cuando todas las operaciones fueron válidas, tanto la transacción principal como la interna alcanzaron su COMMIT y los cuatro registros quedaron almacenados correctamente. Esto demostró que el mecanismo de transacciones anidadas puede funcionar como una unidad lógica completa cuando no se presentan errores.
+Posteriormente se repitió la prueba provocando un error intencional dentro de la transacción interna (por ejemplo, una violación de clave foránea en la creación del envío).
+El error activó el bloque CATCH interno y el sistema ejecutó un ROLLBACK parcial utilizando el SAVEPOINT, revirtiendo exclusivamente los cambios correspondientes al paquete y al envío.
+La transacción principal permaneció activa y pudo realizar el COMMIT correctamente, por lo que la dirección y el cliente sí quedaron registrados en la base de datos.
+Este comportamiento evidencia una diferencia fundamental respecto de una transacción única tradicional:
+en una transacción simple, cualquier error obliga a deshacer absolutamente todo, sin posibilidad de conservar operaciones previas;
+con transacciones anidadas y SAVEPOINTs, es posible revertir solo la parte afectada, preservando la consistencia de los datos sin perder operaciones válidas.
+En conclusión, las pruebas demostraron que las transacciones anidadas permiten un control más fino sobre la atomicidad del proceso. El sistema mantiene la integridad del modelo relacional al impedir que los registros incompletos queden almacenados, pero al mismo tiempo permite conservar las operaciones correctas cuando los errores ocurren en un segmento aislado del flujo.
+
 
 ## TEMA 4:  Backup y restore. Backup en línea
 Iniciamos verificando la cantidad de registros en tablas al azar, por ejemplo Paquete y Envio
