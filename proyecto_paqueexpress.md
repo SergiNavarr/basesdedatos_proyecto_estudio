@@ -1087,6 +1087,7 @@ Ambos indices, al incluir todas las columnas claves de las consultas (fecha, est
 
 ## TEMA 3:  Manejo de transacciones y transacciones anidadas
 
+### Transacciones simples
 Iniciamos verificando la cantidad de registros en las tablas seleccionadas para nuestra transacción, en este caso ruta y envío.
 
 ![Estado_inicial_tablas_ruta_y_envio](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_inicial_tablas_ruta_y_envio.png)
@@ -1184,6 +1185,183 @@ Esto demuestra que la transacción garantiza la integridad y consistencia del mo
 Los datos solo se guardan si todas las operaciones se ejecutan correctamente. 
 Si ocurre cualquier fallo en una parte del proceso, el sistema revierte todo automáticamente y evita la existencia
 de registros incompletos o huérfanos.
+
+
+### Transacciones anidadas 
+
+Como con las transacciones simples iniciamos verificando la cantidad de registros en las tablas seleccionadas para nuestra transacción, en este caso cliente, direccion, paquete, envio e historial_envio.
+
+![Estado_tablas_pre_transaccion_anidada](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_tablas_pre_transaccion_anidada.png)
+
+Luego pasamos a declarar la transacción anidada
+```sql
+/*
+    Transacciones anidadas
+*/
+
+-- Declaración de variables
+DECLARE @direccionID INT;
+DECLARE @clienteID INT;
+DECLARE @paqueteID INT;
+DECLARE @envioID INT;
+
+PRINT '--- INICIO DEL PROCESO EXITOSO ---';
+
+BEGIN TRY
+
+    -- TRANSACCIÓN PRINCIPAL
+    BEGIN TRANSACTION ClientePaqueteProceso;
+
+        -- 1) Insertar Dirección
+        INSERT INTO direccion (calle, numero, piso_depto, codigo_postal, id_ciudad)
+        VALUES ('Calle Falsa', '123', NULL, '3400', 1);
+        SET @direccionID = SCOPE_IDENTITY();
+
+        -- 2) Insertar Cliente
+        INSERT INTO cliente (nombre, apellido, dni, email, id_direccion)
+        VALUES ('Carlos', 'Lopez', '30303030', 'carlos.l@example.com', @direccionID);
+        SET @clienteID = SCOPE_IDENTITY();
+
+        -- Crear SAVEPOINT para transacción interna
+        SAVE TRANSACTION SaveInterna;
+
+        BEGIN TRY
+            -- TRANSACCIÓN ANIDADA (simulada con SAVEPOINT)
+            PRINT '--- INICIO TRANSACCIÓN INTERNA EXITOSA ---';
+
+            -- 3) Insertar Paquete
+            INSERT INTO paquete (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
+            VALUES (4.5, '30x20x10', 1000, 1, @clienteID, 2);
+            SET @paqueteID = SCOPE_IDENTITY();
+
+            -- 4) Insertar Envío
+            INSERT INTO envio (fecha_registro, id_ruta, id_paquete, id_vehiculo, id_empleado_responsable, id_estado_actual)
+            VALUES (GETDATE(), 1, @paqueteID, 1, 1, 1);
+            SET @envioID = SCOPE_IDENTITY();
+
+            -- 5) Insertar Historial del Envío (línea que faltaba)
+            INSERT INTO historial_envio (id_envio, id_estado, fecha_hora, observaciones)
+            VALUES (@envioID, 1, GETDATE(), 'Envío generado correctamente.');
+
+        END TRY
+        BEGIN CATCH
+            PRINT 'ERROR INESPERADO EN TRANSACCIÓN INTERNA';
+            PRINT ERROR_MESSAGE();
+            ROLLBACK TRANSACTION SaveInterna;
+        END CATCH;
+
+    -- Commit de toda la transacción
+    COMMIT TRANSACTION ClientePaqueteProceso;
+    PRINT '--- PROCESO EXITOSO: TODO CONFIRMADO ---';
+
+END TRY
+BEGIN CATCH
+    PRINT 'ERROR GENERAL';
+    IF @@TRANCOUNT > 0
+        ROLLBACK TRANSACTION ClientePaqueteProceso;
+
+    PRINT ERROR_MESSAGE();
+END CATCH;
+
+```
+
+Luego de ejecutar la transacción de manera exitosa podemos ver la siguiente salida:
+
+![Salida_transaccion_anidada_correcta](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/salida_transaccion_anidada_correcta.png)
+
+Ahora pasamos a verificar en que estado quedaron las tablas involucradas:
+
+![Estado_tablas_post_transaccion_anidada](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_tablas_post_transaccion_anidada.png)
+
+Podemos observar que los registros fueron insertados correctamente.
+
+Ahora pasamos a incluir un error intencional en la transacción interna para ver el funcionamiento del Rollback Parcial.
+
+```sql
+-- Declaración de variables
+DECLARE @direccionID INT;
+DECLARE @clienteID INT;
+DECLARE @paqueteID INT;
+
+PRINT '--- INICIO DEL PROCESO CON ROLLBACK PARCIAL ---';
+
+BEGIN TRY
+
+    -- TRANSACCIÓN PRINCIPAL
+    BEGIN TRANSACTION ClientePaqueteProceso;
+
+        -- 1) Insertar Dirección
+        INSERT INTO direccion (calle, numero, piso_depto, codigo_postal, id_ciudad)
+        VALUES ('San Martin', '987', NULL, '3400', 1);
+        SET @direccionID = SCOPE_IDENTITY();
+
+        -- 2) Insertar Cliente
+        INSERT INTO cliente (nombre, apellido, dni, email, id_direccion)
+        VALUES ('Ana', 'Perez', '27555111', 'ana.p@example.com', @direccionID);
+        SET @clienteID = SCOPE_IDENTITY();
+
+        -- SAVEPOINT antes de la transacción anidada
+        SAVE TRANSACTION SaveInterna;
+
+        BEGIN TRY
+            PRINT '--- INICIO TRANSACCIÓN INTERNA CON ERROR ---';
+
+            -- 3) Insertar Paquete
+            INSERT INTO paquete (peso, dimensiones, valor_declarado, id_tipo_paquete, id_cliente_origen, id_cliente_destino)
+            VALUES (3.2, '25x15x12', 800, 1, @clienteID, 2);
+            SET @paqueteID = SCOPE_IDENTITY();
+
+            -- ERROR CONTROLADO
+            THROW 50001, 'Error intencional en transacción interna', 1;
+
+            -- (Estas líneas no se ejecutan)
+            INSERT INTO envio (fecha_registro, id_ruta, id_paquete, id_vehiculo, id_empleado_responsable, id_estado_actual)
+            VALUES (GETDATE(), 1, @paqueteID, 3, 5, 1);
+
+            -- Actualizar datos del paquete (ejemplo de operación adicional)
+            UPDATE paquete
+            SET valor_declarado = 900
+            WHERE id_paquete = @paqueteID;
+
+            -- Inserción en historial del envío (suponiendo que envío existe)
+            INSERT INTO historial_envio (id_envio, id_estado, fecha_hora, observaciones)
+            VALUES (SCOPE_IDENTITY(), 1, GETDATE(), 'Actualización interna');
+
+        END TRY
+        BEGIN CATCH
+            PRINT '--- ERROR EN LA TRANSACCIÓN INTERNA ---';
+            PRINT ERROR_MESSAGE();
+            PRINT 'Revirtiendo SOLO la parte interna...';
+
+            -- ROLLBACK parcial gracias al SAVEPOINT
+            ROLLBACK TRANSACTION SaveInterna;
+
+            PRINT '--- ROLLBACK PARCIAL COMPLETADO ---';
+        END CATCH;
+
+    -- Commit de la transacción principal
+    COMMIT TRANSACTION ClientePaqueteProceso;
+    PRINT '--- PROCESO FINALIZADO: CLIENTE Y DIRECCIÓN CONFIRMADOS ---';
+
+END TRY
+BEGIN CATCH
+
+    PRINT 'ERROR GENERAL';
+    IF @@TRANCOUNT > 0
+        ROLLBACK TRANSACTION ClientePaqueteProceso;
+
+    PRINT ERROR_MESSAGE();
+END CATCH;
+```
+
+Al ejecutar esta transaccion con un rollback parcial podemos observar lo siguiente:
+
+![Salida_transaccion_anidada_rollback_parcial](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/salida_transaccion_anidada_rollback_parcial.png)
+
+Ahora viendo el estado de las tablas podemos observar que solo se insertaron filas en las involucradas en la transacción externa. Mientras que el error forzado en la transaccion interna hizo que las tablas de esta, no se modifiquen
+
+![Estado_tablas_post_transaccion_rollback_parcial](Transacciones%20y%20transacciones%20anidadas/Assets-transacciones/estado_tablas_post_transaccion_rollback_parcial.png)
+
 
 ## TEMA 4:  Backup y restore. Backup en línea
 Iniciamos verificando la cantidad de registros en tablas al azar, por ejemplo Paquete y Envio
